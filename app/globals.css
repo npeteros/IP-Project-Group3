@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Colour values live in lib/palette.ts and are injected as --mo-* variables on <html>. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-*: initial;
+  --color-white: #fff;
+  --color-transparent: transparent;
+  --color-bg: var(--mo-bg);
+  --color-surface: var(--mo-surface);
+
+  --color-neutral-100: var(--mo-neutral-100);
+  --color-neutral-200: var(--mo-neutral-200);
+  --color-neutral-300: var(--mo-neutral-300);
+  --color-neutral-400: var(--mo-neutral-400);
+  --color-neutral-600: var(--mo-neutral-600);
+  --color-neutral-900: var(--mo-neutral-900);
+
+  --color-sage-100: var(--mo-sage-100);
+  --color-sage-200: var(--mo-sage-200);
+  --color-sage-500: var(--mo-sage-500);
+  --color-sage-700: var(--mo-sage-700);
+
+  --color-cloud-100: var(--mo-cloud-100);
+  --color-cloud-200: var(--mo-cloud-200);
+  --color-cloud-500: var(--mo-cloud-500);
+  --color-cloud-700: var(--mo-cloud-700);
+
+  --color-amber-100: var(--mo-amber-100);
+  --color-amber-200: var(--mo-amber-200);
+  --color-amber-500: var(--mo-amber-500);
+  --color-amber-700: var(--mo-amber-700);
+
+  --shadow-sm: var(--mo-shadow-sm);
+  --shadow-md: var(--mo-shadow-md);
+
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --font-sans: var(--font-manrope), "Segoe UI", system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background: var(--mo-bg);
+    color: var(--mo-neutral-900);
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  a {
+    color: var(--mo-cloud-700);
+  }
+
+  a:hover {
+    color: var(--mo-cloud-500);
+  }
 }
