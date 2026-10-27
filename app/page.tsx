@@ -117,7 +117,7 @@ export default function OnboardingPage() {
           >
             {ONBOARDING.skipLabel}
           </Link>
-          <Link href="#" className="hidden text-sm leading-none font-semibold lg:inline">
+          <Link href="/login" className="hidden text-sm leading-none font-semibold lg:inline">
             {ONBOARDING.signInLabel}
           </Link>
         </div>
