@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Icon } from '@/components/Icon'
 import { RegisterForm } from '@/components/RegisterForm'
 import { Logo } from '@/components/ui'
+import { getSession } from '@/src/lib/auth'
 import { APP_NAME, REGISTER } from '@/src/lib/constants'
 import { typography } from '@/src/lib/typography'
 
@@ -12,7 +14,9 @@ export const metadata: Metadata = {
 
 const CURRENT_YEAR = new Date().getFullYear()
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  if (await getSession()) redirect(REGISTER.postRegisterHref)
+
   return (
     <div className="flex min-h-dvh bg-bg text-neutral-900">
       {/* Brand panel — desktop only */}

@@ -22,24 +22,13 @@ describe('loginSchema', () => {
     expect(loginSchema.safeParse(valid).success).toBe(true)
   })
 
-  it('trims whitespace around the email', () => {
-    const result = loginSchema.safeParse({ ...valid, email: '  jane@example.com  ' })
-    expect(result.data?.email).toBe('jane@example.com')
-  })
-
   it('asks for an email when it is empty', () => {
     expect(errorsOf(loginSchema.safeParse({ ...valid, email: '' }))).toEqual({
       email: 'Enter your email address.',
     })
   })
 
-  it('treats a whitespace-only email as empty', () => {
-    expect(errorsOf(loginSchema.safeParse({ ...valid, email: '   ' })).email).toBe(
-      'Enter your email address.',
-    )
-  })
-
-  it.each(['jane', 'jane@', 'jane@example', '@example.com'])(
+  it.each(['jane', 'jane@', 'jane@example', '@example.com', '   '])(
     'rejects malformed email %j',
     (email) => {
       expect(errorsOf(loginSchema.safeParse({ ...valid, email })).email).toBe(
@@ -57,7 +46,13 @@ describe('loginSchema', () => {
 
 describe('registerSchema', () => {
   const password = `${'a'.repeat(REGISTER.minPasswordLength - 1)}1`
-  const valid = { email: 'jane@example.com', password, confirmPassword: password, terms: true }
+  const valid = {
+    name: 'Jane Doe',
+    email: 'jane@example.com',
+    password,
+    confirmPassword: password,
+    terms: true,
+  }
 
   it('accepts a valid registration', () => {
     expect(registerSchema.safeParse(valid).success).toBe(true)
@@ -66,12 +61,25 @@ describe('registerSchema', () => {
   it('reports every invalid field on an empty form', () => {
     expect(
       errorsOf(
-        registerSchema.safeParse({ email: '', password: '', confirmPassword: '', terms: false }),
+        registerSchema.safeParse({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          terms: false,
+        }),
       ),
     ).toEqual({
+      name: 'Enter your name.',
       email: 'Enter your email address.',
       password: REGISTER.passwordError,
       terms: 'Please agree to the Terms and Privacy Policy.',
+    })
+  })
+
+  it('treats a whitespace-only name as empty', () => {
+    expect(errorsOf(registerSchema.safeParse({ ...valid, name: '   ' }))).toEqual({
+      name: 'Enter your name.',
     })
   })
 

@@ -18,6 +18,7 @@ export type IconName =
   | 'quote'
   | 'eye'
   | 'eye-off'
+  | 'log-out'
 
 export type Tone = 'cloud' | 'sage'
 
@@ -43,6 +44,7 @@ export const NAV_ITEMS: NavItem[] = [
 ]
 
 export const NEW_ENTRY_LABEL = 'New entry'
+export const LOG_OUT_LABEL = 'Log out'
 
 export const SEARCH_PLACEHOLDER = 'Search entries'
 
@@ -243,6 +245,9 @@ export const LOGIN_PAGE = {
   submitLabel: 'Sign in',
   newHereLabel: 'New here?',
   createAccountLabel: 'Create an account',
+  createAccountHref: '/register',
+  postLoginHref: '/journal',
+  fallbackError: "We couldn't sign you in. Please try again.",
   quote: `Journaling with ${LOGIN_BRAND_NAME} feels like having a quiet, honest conversation with yourself \u2014 one that actually remembers what you said last month.`,
   quoteAuthor: 'A daily user, 8 months in',
   copyright: `\u00a9 2026 ${LOGIN_BRAND_NAME}`,
@@ -263,6 +268,7 @@ export const REGISTER = {
   submitLabel: 'Create account',
   signInPrompt: 'Already have an account?',
   signInLabel: 'Sign in',
-  signInHref: '#',
+  signInHref: '/login',
   postRegisterHref: '/journal',
+  fallbackError: "We couldn't create your account. Please try again.",
 }

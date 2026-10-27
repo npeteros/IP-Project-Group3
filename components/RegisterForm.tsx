@@ -6,7 +6,8 @@ import { useId, useState, type ComponentProps } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { REGISTER } from '@/src/lib/constants'
-import { registerSchema } from '@/src/lib/schemas'
+import { signUp } from '@/src/lib/auth-client'
+import { registerSchema, type RegisterValues } from '@/src/lib/schemas'
 import { typography } from '@/src/lib/typography'
 import { Icon } from './Icon'
 
@@ -99,15 +100,21 @@ export function RegisterForm() {
     control,
     handleSubmit,
     trigger,
-    formState: { errors },
+    setError,
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
-    defaultValues: { email: '', password: '', confirmPassword: '', terms: false },
+    defaultValues: { name: '', email: '', password: '', confirmPassword: '', terms: false },
   })
   const password = useWatch({ control, name: 'password' })
 
-  // TODO: call the sign-up API once the backend exists.
-  function onSubmit() {
+  // Better Auth signs the new user in straight away, so they land in the app.
+  async function onSubmit({ name, email, password }: RegisterValues) {
+    const { error } = await signUp.email({ name, email, password })
+    if (error) {
+      setError('root.server', { message: error.message ?? REGISTER.fallbackError })
+      return
+    }
     router.push(REGISTER.postRegisterHref)
   }
 
@@ -127,6 +134,18 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
+      <Field label="Name" error={errors.name?.message}>
+        {(props) => (
+          <input
+            {...props}
+            {...register('name')}
+            type="text"
+            autoComplete="name"
+            placeholder="Jane Doe"
+          />
+        )}
+      </Field>
+
       <Field label="Email" error={errors.email?.message}>
         {(props) => (
           <input
@@ -207,9 +226,16 @@ export function RegisterForm() {
         )}
       </div>
 
+      {errors.root?.server && (
+        <p role="alert" className="text-xs leading-[1.4] font-medium text-amber-700">
+          {errors.root.server.message}
+        </p>
+      )}
+
       <button
         type="submit"
-        className="mt-1 h-[52px] w-full rounded-[14px] bg-neutral-900 text-[15px] leading-none font-semibold text-surface shadow-md transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        disabled={isSubmitting}
+        className="mt-1 h-[52px] w-full rounded-[14px] bg-neutral-900 text-[15px] leading-none font-semibold text-surface shadow-md transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {REGISTER.submitLabel}
       </button>

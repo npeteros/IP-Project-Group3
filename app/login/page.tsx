@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Icon } from '@/components/Icon'
 import { LoginForm } from '@/components/LoginForm'
 import { Logo } from '@/components/ui'
+import { getSession } from '@/src/lib/auth'
 import { LOGIN_BRAND_NAME, LOGIN_PAGE } from '@/src/lib/constants'
 import { typography } from '@/src/lib/typography'
 
@@ -10,7 +12,9 @@ export const metadata: Metadata = {
   title: `Sign in | ${LOGIN_BRAND_NAME}`,
 }
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  if (await getSession()) redirect(LOGIN_PAGE.postLoginHref)
+
   return (
     <div className="flex min-h-dvh bg-bg text-neutral-900">
       {/* Quote panel, desktop only */}
@@ -51,7 +55,7 @@ export default function LoginPage() {
 
             <p className="text-center text-[13px] leading-none text-neutral-400">
               {LOGIN_PAGE.newHereLabel}{' '}
-              <Link href="#" className="font-semibold">
+              <Link href={LOGIN_PAGE.createAccountHref} className="font-semibold">
                 {LOGIN_PAGE.createAccountLabel}
               </Link>
             </p>

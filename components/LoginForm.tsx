@@ -6,7 +6,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LOGIN_PAGE } from '@/src/lib/constants'
-import { loginSchema } from '@/src/lib/schemas'
+import { signIn } from '@/src/lib/auth-client'
+import { loginSchema, type LoginValues } from '@/src/lib/schemas'
 import { Icon } from './Icon'
 
 const FIELD_BASE =
@@ -22,15 +23,20 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    setError,
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   })
 
-  // No auth backend yet: signing in goes straight to the journal.
-  function onSubmit() {
-    router.push('/journal')
+  async function onSubmit({ email, password }: LoginValues) {
+    const { error } = await signIn.email({ email, password })
+    if (error) {
+      setError('root.server', { message: error.message ?? LOGIN_PAGE.fallbackError })
+      return
+    }
+    router.push(LOGIN_PAGE.postLoginHref)
   }
 
   return (
@@ -93,9 +99,16 @@ export function LoginForm() {
         )}
       </div>
 
+      {errors.root?.server && (
+        <p role="alert" className={ERROR}>
+          {errors.root.server.message}
+        </p>
+      )}
+
       <button
         type="submit"
-        className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[14px] bg-neutral-900 text-[15px] leading-none font-semibold text-surface hover:bg-neutral-900/90 focus-visible:ring-2 focus-visible:ring-cloud-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+        disabled={isSubmitting}
+        className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[14px] bg-neutral-900 text-[15px] leading-none font-semibold text-surface hover:bg-neutral-900/90 focus-visible:ring-2 focus-visible:ring-cloud-500 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
       >
         {LOGIN_PAGE.submitLabel}
       </button>
