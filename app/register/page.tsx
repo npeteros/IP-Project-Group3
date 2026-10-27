@@ -1,18 +1,22 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Icon } from "@/components/Icon";
-import { RegisterForm } from "@/components/RegisterForm";
-import { Logo } from "@/components/ui";
-import { APP_NAME, REGISTER } from "@/src/lib/constants";
-import { typography } from "@/src/lib/typography";
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { Icon } from '@/components/Icon'
+import { RegisterForm } from '@/components/RegisterForm'
+import { Logo } from '@/components/ui'
+import { getSession } from '@/src/lib/auth'
+import { APP_NAME, REGISTER } from '@/src/lib/constants'
+import { typography } from '@/src/lib/typography'
 
 export const metadata: Metadata = {
   title: `${REGISTER.title} · ${APP_NAME}`,
-};
+}
 
-const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_YEAR = new Date().getFullYear()
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  if (await getSession()) redirect(REGISTER.postRegisterHref)
+
   return (
     <div className="flex min-h-dvh bg-bg text-neutral-900">
       {/* Brand panel — desktop only */}
@@ -31,7 +35,9 @@ export default function RegisterPage() {
           <blockquote className="font-serif text-[26px] leading-[1.6] font-normal italic">
             &ldquo;{REGISTER.quote}&rdquo;
           </blockquote>
-          <figcaption className="text-[13px] leading-none text-neutral-400">{REGISTER.quoteAuthor}</figcaption>
+          <figcaption className="text-[13px] leading-none text-neutral-400">
+            {REGISTER.quoteAuthor}
+          </figcaption>
         </figure>
 
         <p className="text-xs leading-none text-neutral-600">
@@ -53,5 +59,5 @@ export default function RegisterPage() {
         </div>
       </main>
     </div>
-  );
+  )
 }

@@ -15,16 +15,17 @@ export type IconName =
   | 'search'
   | 'send'
   | 'flame'
-  | "quote"
-  | "eye"
-  | "eye-off";
+  | 'quote'
+  | 'eye'
+  | 'eye-off'
+  | 'log-out'
 
 export type Tone = 'cloud' | 'sage'
 
 export const APP_NAME = 'Moodiary'
 
 // Login screen copy uses the MoodDiary spelling.
-export const LOGIN_BRAND_NAME = "MoodDiary";
+export const LOGIN_BRAND_NAME = 'MoodDiary'
 
 export const STREAK_DAYS = 12
 
@@ -43,6 +44,7 @@ export const NAV_ITEMS: NavItem[] = [
 ]
 
 export const NEW_ENTRY_LABEL = 'New entry'
+export const LOG_OUT_LABEL = 'Log out'
 
 export const SEARCH_PLACEHOLDER = 'Search entries'
 
@@ -233,31 +235,40 @@ export const CHAT_MESSAGES: ChatMessage[] = [
 ]
 
 export const LOGIN_PAGE = {
-  title: "Welcome back",
-  description: "Sign in to keep your journal private and synced.",
-  emailLabel: "Email",
-  emailPlaceholder: "you@example.com",
-  passwordLabel: "Password",
-  passwordPlaceholder: "Enter your password",
-  forgotPasswordLabel: "Forgot password?",
-  submitLabel: "Sign in",
-  newHereLabel: "New here?",
-  createAccountLabel: "Create an account",
+  title: 'Welcome back',
+  description: 'Sign in to keep your journal private and synced.',
+  emailLabel: 'Email',
+  emailPlaceholder: 'you@example.com',
+  passwordLabel: 'Password',
+  passwordPlaceholder: 'Enter your password',
+  forgotPasswordLabel: 'Forgot password?',
+  submitLabel: 'Sign in',
+  newHereLabel: 'New here?',
+  createAccountLabel: 'Create an account',
+  createAccountHref: '/register',
+  postLoginHref: '/journal',
+  fallbackError: "We couldn't sign you in. Please try again.",
   quote: `Journaling with ${LOGIN_BRAND_NAME} feels like having a quiet, honest conversation with yourself \u2014 one that actually remembers what you said last month.`,
-  quoteAuthor: "A daily user, 8 months in",
+  quoteAuthor: 'A daily user, 8 months in',
   copyright: `\u00a9 2026 ${LOGIN_BRAND_NAME}`,
-};
+}
+
+const MIN_PASSWORD_LENGTH = 8
+const PASSWORD_REQUIREMENT = `at least ${MIN_PASSWORD_LENGTH} characters, including a number.`
 
 export const REGISTER = {
-  title: "Create your account",
-  subtitle: "Start a private journal that grows with you.",
+  title: 'Create your account',
+  subtitle: 'Start a private journal that grows with you.',
   quote: `Journaling with ${APP_NAME} feels like having a quiet, honest conversation with yourself — one that actually remembers what you said last month.`,
-  quoteAuthor: "A daily user, 8 months in",
-  minPasswordLength: 8,
-  strengthLabels: ["Weak", "Fair", "Good", "Strong"],
-  submitLabel: "Create account",
-  signInPrompt: "Already have an account?",
-  signInLabel: "Sign in",
-  signInHref: "#",
-  postRegisterHref: "/journal",
-};
+  quoteAuthor: 'A daily user, 8 months in',
+  minPasswordLength: MIN_PASSWORD_LENGTH,
+  passwordHint: PASSWORD_REQUIREMENT,
+  passwordError: `Use ${PASSWORD_REQUIREMENT}`,
+  strengthLabels: ['Weak', 'Fair', 'Good', 'Strong'],
+  submitLabel: 'Create account',
+  signInPrompt: 'Already have an account?',
+  signInLabel: 'Sign in',
+  signInHref: '/login',
+  postRegisterHref: '/journal',
+  fallbackError: "We couldn't create your account. Please try again.",
+}

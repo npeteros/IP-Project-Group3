@@ -43,3 +43,5 @@ next-env.d.ts
 # local docs and design
 /local_docs
 /design
+
+/src/generated/prisma

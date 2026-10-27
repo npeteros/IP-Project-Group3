@@ -3,24 +3,32 @@ import { typography } from '@/src/lib/typography'
 import { Icon } from './Icon'
 
 export function Logo({
-  size = "md",
+  size = 'md',
   inverted = false,
   name = APP_NAME,
 }: {
-  size?: "md" | "lg";
+  size?: 'md' | 'lg'
   /** Light mark and text, for use on dark backgrounds. */
-  inverted?: boolean;
-  name?: string;
+  inverted?: boolean
+  name?: string
 }) {
-  const box = size === "lg" ? "size-8" : "size-[30px]";
-  const markColors = inverted ? "bg-surface text-neutral-900" : "bg-neutral-900 text-surface";
+  const box = size === 'lg' ? 'size-8' : 'size-[30px]'
+  const markColors = inverted ? 'bg-surface text-neutral-900' : 'bg-neutral-900 text-surface'
 
   return (
-    <div className={`flex items-center gap-2.5 ${inverted ? "text-surface" : ""}`}>
-      <div className={`${box} flex flex-none items-center justify-center rounded-[9px] ${markColors}`}>
-        <Icon name="book" size={size === "lg" ? 16 : 15} />
+    <div className={`flex items-center gap-2.5 ${inverted ? 'text-surface' : ''}`}>
+      <div
+        className={`${box} flex flex-none items-center justify-center rounded-[9px] ${markColors}`}
+      >
+        <Icon name="book" size={size === 'lg' ? 16 : 15} />
       </div>
-      <span className={size === "lg" ? "font-serif text-xl leading-none font-semibold" : typography.wordmark}>{name}</span>
+      <span
+        className={
+          size === 'lg' ? 'font-serif text-xl leading-none font-semibold' : typography.wordmark
+        }
+      >
+        {name}
+      </span>
     </div>
   )
 }

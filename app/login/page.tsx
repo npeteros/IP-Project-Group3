@@ -1,16 +1,20 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Icon } from "@/components/Icon";
-import { LoginForm } from "@/components/LoginForm";
-import { Logo } from "@/components/ui";
-import { LOGIN_BRAND_NAME, LOGIN_PAGE } from "@/src/lib/constants";
-import { typography } from "@/src/lib/typography";
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { Icon } from '@/components/Icon'
+import { LoginForm } from '@/components/LoginForm'
+import { Logo } from '@/components/ui'
+import { getSession } from '@/src/lib/auth'
+import { LOGIN_BRAND_NAME, LOGIN_PAGE } from '@/src/lib/constants'
+import { typography } from '@/src/lib/typography'
 
 export const metadata: Metadata = {
   title: `Sign in | ${LOGIN_BRAND_NAME}`,
-};
+}
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  if (await getSession()) redirect(LOGIN_PAGE.postLoginHref)
+
   return (
     <div className="flex min-h-dvh bg-bg text-neutral-900">
       {/* Quote panel, desktop only */}
@@ -22,10 +26,14 @@ export default function LoginPage() {
           <blockquote className="font-serif text-2xl leading-[1.6] font-normal italic">
             {`\u201c${LOGIN_PAGE.quote}\u201d`}
           </blockquote>
-          <figcaption className="font-sans text-[13px] leading-none text-neutral-400">{LOGIN_PAGE.quoteAuthor}</figcaption>
+          <figcaption className="font-sans text-[13px] leading-none text-neutral-400">
+            {LOGIN_PAGE.quoteAuthor}
+          </figcaption>
         </figure>
 
-        <p className="font-sans text-[13px] leading-none text-neutral-400">{LOGIN_PAGE.copyright}</p>
+        <p className="font-sans text-[13px] leading-none text-neutral-400">
+          {LOGIN_PAGE.copyright}
+        </p>
       </aside>
 
       {/* Sign-in form */}
@@ -37,15 +45,17 @@ export default function LoginPage() {
 
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-2.5">
-              <h1 className="font-serif text-[32px] leading-[1.15] font-medium">{LOGIN_PAGE.title}</h1>
+              <h1 className="font-serif text-[32px] leading-[1.15] font-medium">
+                {LOGIN_PAGE.title}
+              </h1>
               <p className={typography.body}>{LOGIN_PAGE.description}</p>
             </div>
 
             <LoginForm />
 
             <p className="text-center text-[13px] leading-none text-neutral-400">
-              {LOGIN_PAGE.newHereLabel}{" "}
-              <Link href="#" className="font-semibold">
+              {LOGIN_PAGE.newHereLabel}{' '}
+              <Link href={LOGIN_PAGE.createAccountHref} className="font-semibold">
                 {LOGIN_PAGE.createAccountLabel}
               </Link>
             </p>
@@ -53,5 +63,5 @@ export default function LoginPage() {
         </div>
       </main>
     </div>
-  );
+  )
 }
