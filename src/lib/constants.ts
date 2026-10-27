@@ -248,12 +248,17 @@ export const LOGIN_PAGE = {
   copyright: `\u00a9 2026 ${LOGIN_BRAND_NAME}`,
 }
 
+const MIN_PASSWORD_LENGTH = 8
+const PASSWORD_REQUIREMENT = `at least ${MIN_PASSWORD_LENGTH} characters, including a number.`
+
 export const REGISTER = {
   title: 'Create your account',
   subtitle: 'Start a private journal that grows with you.',
   quote: `Journaling with ${APP_NAME} feels like having a quiet, honest conversation with yourself — one that actually remembers what you said last month.`,
   quoteAuthor: 'A daily user, 8 months in',
-  minPasswordLength: 8,
+  minPasswordLength: MIN_PASSWORD_LENGTH,
+  passwordHint: PASSWORD_REQUIREMENT,
+  passwordError: `Use ${PASSWORD_REQUIREMENT}`,
   strengthLabels: ['Weak', 'Fair', 'Good', 'Strong'],
   submitLabel: 'Create account',
   signInPrompt: 'Already have an account?',

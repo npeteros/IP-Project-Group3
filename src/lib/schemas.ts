@@ -14,12 +14,13 @@ export const loginSchema = z.object({
 
 export type LoginValues = z.infer<typeof loginSchema>
 
-const PASSWORD_RULE = `Use at least ${REGISTER.minPasswordLength} characters, including a number.`
-
 export const registerSchema = z
   .object({
     email,
-    password: z.string().min(REGISTER.minPasswordLength, PASSWORD_RULE).regex(/\d/, PASSWORD_RULE),
+    password: z
+      .string()
+      .min(REGISTER.minPasswordLength, REGISTER.passwordError)
+      .regex(/\d/, REGISTER.passwordError),
     confirmPassword: z.string(),
     terms: z.boolean().refine(Boolean, 'Please agree to the Terms and Privacy Policy.'),
   })

@@ -70,7 +70,7 @@ function Field({
 
 function StrengthMeter({ password }: { password: string }) {
   const score = passwordStrength(password)
-  const hint = `at least ${REGISTER.minPasswordLength} characters, including a number.`
+  const hint = REGISTER.passwordHint
 
   return (
     <div className="flex flex-col gap-2" aria-live="polite">
