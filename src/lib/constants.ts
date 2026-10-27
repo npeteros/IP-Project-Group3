@@ -15,6 +15,9 @@ export type IconName =
   | 'search'
   | 'send'
   | 'flame'
+  | "quote"
+  | "eye"
+  | "eye-off";
 
 export type Tone = 'cloud' | 'sage'
 
@@ -225,3 +228,17 @@ export const CHAT_MESSAGES: ChatMessage[] = [
       'Sunday evenings seem to set the tone — worth trying a short wind-down ritual before the week starts?',
   },
 ]
+
+export const REGISTER = {
+  title: "Create your account",
+  subtitle: "Start a private journal that grows with you.",
+  quote: `Journaling with ${APP_NAME} feels like having a quiet, honest conversation with yourself — one that actually remembers what you said last month.`,
+  quoteAuthor: "A daily user, 8 months in",
+  minPasswordLength: 8,
+  strengthLabels: ["Weak", "Fair", "Good", "Strong"],
+  submitLabel: "Create account",
+  signInPrompt: "Already have an account?",
+  signInLabel: "Sign in",
+  signInHref: "#",
+  postRegisterHref: "/journal",
+};
