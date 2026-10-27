@@ -3,6 +3,10 @@ export const typography = {
   display: 'font-serif text-[28px] leading-[1.2] font-medium lg:text-[52px] lg:leading-[1.15]',
   // Page titles ("Journal", "Frameworks", "Chat with your journal")
   pageTitle: 'font-serif text-[26px] leading-none font-semibold lg:text-[34px]',
+  // Auth page headline
+  authTitle: "font-serif text-[28px] leading-[1.2] font-medium lg:text-[32px]",
+  // Form field labels
+  fieldLabel: "font-sans text-[13px] leading-none font-medium text-neutral-900",
   // App wordmark next to the logo
   wordmark: 'font-serif text-[19px] leading-none font-semibold',
   // Entry card titles
