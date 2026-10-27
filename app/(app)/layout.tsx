@@ -1,4 +1,4 @@
-import { MobileTabBar, Sidebar } from "@/components/AppNav";
+import { MobileTabBar, Sidebar } from '@/components/AppNav'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,5 +9,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <MobileTabBar />
       </div>
     </div>
-  );
+  )
 }

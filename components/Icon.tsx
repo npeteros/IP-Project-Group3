@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import type { IconName } from "@/lib/constants";
+import type { ReactNode } from 'react'
+import type { IconName } from '@/lib/constants'
 
 const PATHS: Record<IconName, ReactNode> = {
   book: (
@@ -48,26 +48,26 @@ const PATHS: Record<IconName, ReactNode> = {
   flame: (
     <path d="M12 2c.7 2.7-2.6 4.4-2.6 7.8a2.6 2.6 0 0 0 5.2 0c0-.9-.5-1.6-.5-1.6 1.4.8 2.4 2.6 2.4 4.4A4.5 4.5 0 0 1 12 17.1a4.5 4.5 0 0 1-4.5-4.5C7.5 8 9.5 5.5 12 2z" />
   ),
-};
+}
 
 type IconProps = {
-  name: IconName;
-  size?: number;
-  strokeWidth?: number;
-  className?: string;
-};
+  name: IconName
+  size?: number
+  strokeWidth?: number
+  className?: string
+}
 
 // Icons inherit colour from `currentColor`, so tint them with text-* classes.
 export function Icon({ name, size = 18, strokeWidth = 2, className }: IconProps) {
-  const filled = name === "flame";
+  const filled = name === 'flame'
 
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke={filled ? "none" : "currentColor"}
+      fill={filled ? 'currentColor' : 'none'}
+      stroke={filled ? 'none' : 'currentColor'}
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -76,5 +76,5 @@ export function Icon({ name, size = 18, strokeWidth = 2, className }: IconProps)
     >
       {PATHS[name]}
     </svg>
-  );
+  )
 }

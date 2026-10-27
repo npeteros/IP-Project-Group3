@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Colour values live in lib/palette.ts and are injected as --mo-* variables on <html>. */
 @theme inline {
@@ -34,7 +34,7 @@
   --shadow-md: var(--mo-shadow-md);
 
   --font-serif: var(--font-newsreader), Georgia, serif;
-  --font-sans: var(--font-manrope), "Segoe UI", system-ui, sans-serif;
+  --font-sans: var(--font-manrope), 'Segoe UI', system-ui, sans-serif;
 }
 
 @layer base {

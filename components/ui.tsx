@@ -1,18 +1,26 @@
-import { APP_NAME, STREAK_DAYS, type JournalEntry, type Tone } from "@/lib/constants";
-import { typography } from "@/lib/typography";
-import { Icon } from "./Icon";
+import { APP_NAME, STREAK_DAYS, type JournalEntry, type Tone } from '@/lib/constants'
+import { typography } from '@/lib/typography'
+import { Icon } from './Icon'
 
-export function Logo({ size = "md" }: { size?: "md" | "lg" }) {
-  const box = size === "lg" ? "size-8" : "size-[30px]";
+export function Logo({ size = 'md' }: { size?: 'md' | 'lg' }) {
+  const box = size === 'lg' ? 'size-8' : 'size-[30px]'
 
   return (
     <div className="flex items-center gap-2.5">
-      <div className={`${box} flex flex-none items-center justify-center rounded-[9px] bg-neutral-900 text-surface`}>
-        <Icon name="book" size={size === "lg" ? 16 : 15} />
+      <div
+        className={`${box} flex flex-none items-center justify-center rounded-[9px] bg-neutral-900 text-surface`}
+      >
+        <Icon name="book" size={size === 'lg' ? 16 : 15} />
       </div>
-      <span className={size === "lg" ? "font-serif text-xl leading-none font-semibold" : typography.wordmark}>{APP_NAME}</span>
+      <span
+        className={
+          size === 'lg' ? 'font-serif text-xl leading-none font-semibold' : typography.wordmark
+        }
+      >
+        {APP_NAME}
+      </span>
     </div>
-  );
+  )
 }
 
 export function StreakBadge({ compact = false }: { compact?: boolean }) {
@@ -23,11 +31,21 @@ export function StreakBadge({ compact = false }: { compact?: boolean }) {
         {compact ? STREAK_DAYS : `${STREAK_DAYS} day streak`}
       </span>
     </div>
-  );
+  )
 }
 
-export function Tag({ label, className = "bg-neutral-100" }: { label: string; className?: string }) {
-  return <span className={`${typography.tag} rounded-full px-2.5 py-1 text-neutral-600 ${className}`}>{label}</span>;
+export function Tag({
+  label,
+  className = 'bg-neutral-100',
+}: {
+  label: string
+  className?: string
+}) {
+  return (
+    <span className={`${typography.tag} rounded-full px-2.5 py-1 text-neutral-600 ${className}`}>
+      {label}
+    </span>
+  )
 }
 
 export function FilterChip({ label, active = false }: { label: string; active?: boolean }) {
@@ -36,19 +54,27 @@ export function FilterChip({ label, active = false }: { label: string; active?: 
       type="button"
       className={`${typography.chip} flex-none rounded-full px-4 py-2 lg:px-[18px] lg:py-[9px] ${
         active
-          ? "bg-neutral-900 font-semibold text-surface"
-          : "border border-neutral-200 bg-surface font-medium text-neutral-600"
+          ? 'bg-neutral-900 font-semibold text-surface'
+          : 'border border-neutral-200 bg-surface font-medium text-neutral-600'
       }`}
     >
       {label}
     </button>
-  );
+  )
 }
 
-export function Card({ className = "", children }: { className?: string; children: React.ReactNode }) {
+export function Card({
+  className = '',
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) {
   return (
-    <div className={`rounded-2xl border border-neutral-200 bg-surface shadow-sm ${className}`}>{children}</div>
-  );
+    <div className={`rounded-2xl border border-neutral-200 bg-surface shadow-sm ${className}`}>
+      {children}
+    </div>
+  )
 }
 
 export function EntryCard({ entry, tagClassName }: { entry: JournalEntry; tagClassName?: string }) {
@@ -63,13 +89,13 @@ export function EntryCard({ entry, tagClassName }: { entry: JournalEntry; tagCla
         ))}
       </div>
     </Card>
-  );
+  )
 }
 
 const TONE_CLASSES: Record<Tone, { pill: string; dot: string }> = {
-  cloud: { pill: "border-cloud-200 bg-cloud-100 text-cloud-700", dot: "bg-cloud-700" },
-  sage: { pill: "border-sage-200 bg-sage-100 text-sage-700", dot: "bg-sage-700" },
-};
+  cloud: { pill: 'border-cloud-200 bg-cloud-100 text-cloud-700', dot: 'bg-cloud-700' },
+  sage: { pill: 'border-sage-200 bg-sage-100 text-sage-700', dot: 'bg-sage-700' },
+}
 
 export function ToneBadge({ label, tone }: { label: string; tone: Tone }) {
   return (
@@ -79,14 +105,20 @@ export function ToneBadge({ label, tone }: { label: string; tone: Tone }) {
       <Icon name="check" size={14} />
       <span className="text-xs leading-none font-semibold">{label}</span>
     </span>
-  );
+  )
 }
 
 export function MoodDot({ tone }: { tone: Tone }) {
-  return <span className={`size-[7px] rounded-full ${TONE_CLASSES[tone].dot}`} />;
+  return <span className={`size-[7px] rounded-full ${TONE_CLASSES[tone].dot}`} />
 }
 
-export function PrimaryButton({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function PrimaryButton({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
   return (
     <button
       type="button"
@@ -94,5 +126,5 @@ export function PrimaryButton({ children, className = "" }: { children: React.Re
     >
       {children}
     </button>
-  );
+  )
 }
