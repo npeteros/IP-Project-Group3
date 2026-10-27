@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   title: `${REGISTER.title} · ${APP_NAME}`,
 };
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export default function RegisterPage() {
   return (
     <div className="flex min-h-dvh bg-bg text-neutral-900">
@@ -33,7 +35,7 @@ export default function RegisterPage() {
         </figure>
 
         <p className="text-xs leading-none text-neutral-600">
-          &copy; {new Date().getFullYear()} {APP_NAME}
+          &copy; {CURRENT_YEAR} {APP_NAME}
         </p>
       </aside>
 
