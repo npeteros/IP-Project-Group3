@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { IconName } from '@/lib/constants'
+import type { IconName } from '@/src/lib/constants'
 
 const PATHS: Record<IconName, ReactNode> = {
   book: (

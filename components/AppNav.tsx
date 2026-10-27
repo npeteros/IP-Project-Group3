@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { NAV_ITEMS, NEW_ENTRY_LABEL } from '@/lib/constants'
+import { NAV_ITEMS, NEW_ENTRY_LABEL } from '@/src/lib/constants'
 import { Icon } from './Icon'
 import { Logo, PrimaryButton, StreakBadge } from './ui'
 

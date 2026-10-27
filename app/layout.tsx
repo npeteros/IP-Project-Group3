@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Manrope, Newsreader } from 'next/font/google'
-import { APP_NAME } from '@/lib/constants'
-import { paletteCssVariables } from '@/lib/palette'
+import { APP_NAME } from '@/src/lib/constants'
+import { paletteCssVariables } from '@/src/lib/palette'
 import './globals.css'
 
 const newsreader = Newsreader({

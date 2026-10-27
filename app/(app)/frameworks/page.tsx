@@ -1,7 +1,7 @@
 import { Icon } from '@/components/Icon'
 import { Card } from '@/components/ui'
-import { FRAMEWORKS, FRAMEWORKS_PAGE } from '@/lib/constants'
-import { typography } from '@/lib/typography'
+import { FRAMEWORKS, FRAMEWORKS_PAGE } from '@/src/lib/constants'
+import { typography } from '@/src/lib/typography'
 
 export default function FrameworksPage() {
   return (

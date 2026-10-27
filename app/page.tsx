@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { Icon } from '@/components/Icon'
 import { Card, Logo, MoodDot, Tag, ToneBadge } from '@/components/ui'
-import { ONBOARDING } from '@/lib/constants'
-import { typography } from '@/lib/typography'
+import { ONBOARDING } from '@/src/lib/constants'
+import { typography } from '@/src/lib/typography'
 
 function StepDots() {
   return (

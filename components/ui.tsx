@@ -1,5 +1,5 @@
-import { APP_NAME, STREAK_DAYS, type JournalEntry, type Tone } from '@/lib/constants'
-import { typography } from '@/lib/typography'
+import { APP_NAME, STREAK_DAYS, type JournalEntry, type Tone } from '@/src/lib/constants'
+import { typography } from '@/src/lib/typography'
 import { Icon } from './Icon'
 
 export function Logo({ size = 'md' }: { size?: 'md' | 'lg' }) {

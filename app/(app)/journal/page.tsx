@@ -5,8 +5,8 @@ import {
   JOURNAL_FILTERS,
   NEW_ENTRY_LABEL,
   SEARCH_PLACEHOLDER,
-} from '@/lib/constants'
-import { typography } from '@/lib/typography'
+} from '@/src/lib/constants'
+import { typography } from '@/src/lib/typography'
 
 export default function JournalPage() {
   return (
