@@ -1,41 +1,59 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { LOGIN_PAGE } from "@/src/lib/constants";
-import { Icon } from "./Icon";
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { LOGIN_PAGE } from '@/src/lib/constants'
+import { loginSchema } from '@/src/lib/schemas'
+import { Icon } from './Icon'
 
 const FIELD_BASE =
-  "h-[52px] w-full rounded-[14px] border border-neutral-200 bg-surface px-4 text-[15px] leading-none text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-cloud-200";
+  'h-[52px] w-full rounded-[14px] border border-neutral-200 bg-surface px-4 text-[15px] leading-none text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-cloud-200'
 
-const LABEL = "text-[13px] leading-none font-medium text-neutral-600";
+const LABEL = 'text-[13px] leading-none font-medium text-neutral-600'
+
+const ERROR = 'text-xs leading-[1.4] font-medium text-amber-700'
 
 export function LoginForm() {
-  const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  })
 
   // No auth backend yet: signing in goes straight to the journal.
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    router.push("/journal");
+  function onSubmit() {
+    router.push('/journal')
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <label htmlFor="email" className={LABEL}>
           {LOGIN_PAGE.emailLabel}
         </label>
         <input
           id="email"
-          name="email"
+          {...register('email')}
           type="email"
           autoComplete="email"
-          required
           placeholder={LOGIN_PAGE.emailPlaceholder}
+          aria-invalid={Boolean(errors.email)}
+          aria-describedby={errors.email ? 'email-error' : undefined}
           className={FIELD_BASE}
         />
+        {errors.email && (
+          <p id="email-error" className={ERROR}>
+            {errors.email.message}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -50,23 +68,29 @@ export function LoginForm() {
         <div className="relative">
           <input
             id="password"
-            name="password"
-            type={showPassword ? "text" : "password"}
+            {...register('password')}
+            type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
-            required
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? 'password-error' : undefined}
             placeholder={LOGIN_PAGE.passwordPlaceholder}
             className={`${FIELD_BASE} pr-12`}
           />
           <button
             type="button"
             onClick={() => setShowPassword((visible) => !visible)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
             aria-pressed={showPassword}
             className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-[14px] text-neutral-400 hover:text-neutral-600 focus-visible:text-neutral-900 focus-visible:outline-none"
           >
-            <Icon name={showPassword ? "eye-off" : "eye"} size={17} strokeWidth={1.8} />
+            <Icon name={showPassword ? 'eye-off' : 'eye'} size={17} strokeWidth={1.8} />
           </button>
         </div>
+        {errors.password && (
+          <p id="password-error" className={ERROR}>
+            {errors.password.message}
+          </p>
+        )}
       </div>
 
       <button
@@ -76,5 +100,5 @@ export function LoginForm() {
         {LOGIN_PAGE.submitLabel}
       </button>
     </form>
-  );
+  )
 }
