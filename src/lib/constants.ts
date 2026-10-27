@@ -247,3 +247,17 @@ export const LOGIN_PAGE = {
   quoteAuthor: "A daily user, 8 months in",
   copyright: `\u00a9 2026 ${LOGIN_BRAND_NAME}`,
 };
+
+export const REGISTER = {
+  title: "Create your account",
+  subtitle: "Start a private journal that grows with you.",
+  quote: `Journaling with ${APP_NAME} feels like having a quiet, honest conversation with yourself — one that actually remembers what you said last month.`,
+  quoteAuthor: "A daily user, 8 months in",
+  minPasswordLength: 8,
+  strengthLabels: ["Weak", "Fair", "Good", "Strong"],
+  submitLabel: "Create account",
+  signInPrompt: "Already have an account?",
+  signInLabel: "Sign in",
+  signInHref: "#",
+  postRegisterHref: "/journal",
+};
