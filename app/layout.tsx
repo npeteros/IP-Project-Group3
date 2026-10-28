@@ -3,6 +3,7 @@ import { Manrope, Newsreader } from 'next/font/google'
 import { APP_NAME } from '@/src/lib/constants'
 import { paletteCssVariables } from '@/src/lib/palette'
 import './globals.css'
+import Providers from '@/components/providers/Providers'
 
 const newsreader = Newsreader({
   variable: '--font-newsreader',
@@ -28,7 +29,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${newsreader.variable} ${manrope.variable} h-full antialiased`}
       style={paletteCssVariables()}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   )
 }
