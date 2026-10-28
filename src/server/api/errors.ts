@@ -1,11 +1,14 @@
-export type ApiErrorCode =
-  | 'BAD_REQUEST'
-  | 'VALIDATION_ERROR'
-  | 'UNAUTHORIZED'
-  | 'FORBIDDEN'
-  | 'NOT_FOUND'
-  | 'CONFLICT'
-  | 'INTERNAL_ERROR'
+export const API_ERROR_CODES = [
+  'BAD_REQUEST',
+  'VALIDATION_ERROR',
+  'UNAUTHORIZED',
+  'FORBIDDEN',
+  'NOT_FOUND',
+  'CONFLICT',
+  'INTERNAL_ERROR',
+] as const
+
+export type ApiErrorCode = (typeof API_ERROR_CODES)[number]
 
 /** Base for errors services throw; the route helper maps them to a response. */
 export class AppError extends Error {
