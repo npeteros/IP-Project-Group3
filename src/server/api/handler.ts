@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/src/lib/auth'
 import {
   AppError,
+  BadRequestError,
   InternalServerError,
   UnauthorizedError,
   type ApiErrorCode,
@@ -34,6 +35,15 @@ export function withAuth<Ctx = unknown>(handler: AuthedHandler<Ctx>) {
     } catch (error) {
       return toErrorResponse(error)
     }
+  }
+}
+
+/** Parses the JSON body; a missing or malformed body is a 400, not a 500. */
+export async function readJsonBody(request: Request): Promise<unknown> {
+  try {
+    return await request.json()
+  } catch {
+    throw new BadRequestError('The request body must be valid JSON.')
   }
 }
 

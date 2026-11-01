@@ -7,6 +7,7 @@ import {
   EntrySchema,
   EntryUpdateSchema,
   TAG_NAME_MAX_LENGTH,
+  TAGS_PER_ENTRY_MAX,
 } from '@/src/server/entry/schemas'
 
 function errorsOf(result: {
@@ -41,21 +42,23 @@ describe('EntryCreateSchema', () => {
     })
   })
 
-  it('defaults the time zone to UTC and tags to an empty list', () => {
-    expect(EntryCreateSchema.parse({ body: 'Hello' })).toEqual({
-      body: 'Hello',
-      timeZone: 'UTC',
+  it('defaults tags to an empty list', () => {
+    expect(EntryCreateSchema.parse({ body: 'Hello' })).toEqual({ body: 'Hello', tags: [] })
+  })
+
+  it('drops a client-sent time zone: dates are always derived in Manila time', () => {
+    expect(EntryCreateSchema.parse({ body: 'x', timeZone: 'America/New_York' })).toEqual({
+      body: 'x',
       tags: [],
     })
   })
 
-  it('accepts an IANA time zone and rejects an unknown one', () => {
-    expect(EntryCreateSchema.parse({ body: 'x', timeZone: 'Asia/Manila' }).timeZone).toBe(
-      'Asia/Manila',
+  it(`accepts ${TAGS_PER_ENTRY_MAX} tags and rejects more`, () => {
+    const tags = Array.from({ length: TAGS_PER_ENTRY_MAX + 1 }, (_, i) => `tag${i}`)
+    expect(EntryCreateSchema.safeParse({ body: 'x', tags: tags.slice(1) }).success).toBe(true)
+    expect(errorsOf(EntryCreateSchema.safeParse({ body: 'x', tags })).tags).toBe(
+      `An entry can have at most ${TAGS_PER_ENTRY_MAX} tags.`,
     )
-    expect(errorsOf(EntryCreateSchema.safeParse({ body: 'x', timeZone: 'Not/AZone' }))).toEqual({
-      timeZone: 'Unknown time zone.',
-    })
   })
 
   it.each(['2026-08-25T08:14:00Z', '2026-08-25T08:14:00.000+08:00'])(

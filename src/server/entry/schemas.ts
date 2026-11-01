@@ -4,19 +4,11 @@ import { z } from 'zod'
 // Keep this file free of server-only imports (Prisma, `next/headers`, `auth`).
 
 export const TAG_NAME_MAX_LENGTH = 32
+export const TAGS_PER_ENTRY_MAX = 20
 
 /** The per-user unique key for a tag: trimmed and lowercased, matching `Tag.normalizedName`. */
 export function normalizeTagName(name: string) {
   return name.trim().toLowerCase()
-}
-
-function isTimeZone(timeZone: string) {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone })
-    return true
-  } catch {
-    return false
-  }
 }
 
 function dedupeTags(tags: string[]) {
@@ -46,9 +38,8 @@ const updateTitle = z
 
 const body = z.string().trim().min(1, 'Write something before saving.')
 
+/** The entry's calendar day is derived from this in `APP_TIME_ZONE`, so clients send no time zone. */
 const writtenAt = z.iso.datetime({ offset: true, error: 'Enter a valid date and time.' })
-
-const timeZone = z.string().min(1).refine(isTimeZone, 'Unknown time zone.')
 
 const tagName = z
   .string()
@@ -57,7 +48,10 @@ const tagName = z
   .max(TAG_NAME_MAX_LENGTH, `Tag names can be at most ${TAG_NAME_MAX_LENGTH} characters.`)
 
 /** Tag names, de-duplicated case-insensitively. The first spelling wins. */
-const tags = z.array(tagName).transform(dedupeTags)
+const tags = z
+  .array(tagName)
+  .max(TAGS_PER_ENTRY_MAX, `An entry can have at most ${TAGS_PER_ENTRY_MAX} tags.`)
+  .transform(dedupeTags)
 
 // --- Requests ---------------------------------------------------------------
 
@@ -66,7 +60,6 @@ export const EntryCreateSchema = z.object({
   title: createTitle.optional(),
   body,
   writtenAt: writtenAt.optional(),
-  timeZone: timeZone.default('UTC'),
   tags: tags.default([]),
 })
 
@@ -82,7 +75,6 @@ export const EntryUpdateSchema = z
     title: updateTitle.optional(),
     body: body.optional(),
     writtenAt: writtenAt.optional(),
-    timeZone: timeZone.optional(),
     tags: tags.optional(),
   })
   .refine(
