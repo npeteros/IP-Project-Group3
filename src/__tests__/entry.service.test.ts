@@ -53,6 +53,7 @@ describe('EntryService.createEntry', () => {
       body: 'hi',
       writtenAt: '2026-01-01T03:30:00.000Z',
       timeZone: 'America/New_York',
+      tags: [],
     })
     expect(tx.entry.create.mock.calls[0][0].data.entryDate).toEqual(
       new Date('2025-12-31T00:00:00.000Z'),
@@ -62,6 +63,7 @@ describe('EntryService.createEntry', () => {
       body: 'hi',
       writtenAt: '2026-01-01T03:30:00.000Z',
       timeZone: 'UTC',
+      tags: [],
     })
     expect(tx.entry.create.mock.calls[1][0].data.entryDate).toEqual(
       new Date('2026-01-01T00:00:00.000Z'),
@@ -70,14 +72,14 @@ describe('EntryService.createEntry', () => {
 
   it('rejects an unknown time zone', async () => {
     const { service } = setup()
-    await expect(service.createEntry({ body: 'hi', timeZone: 'Mars/Base' })).rejects.toBeInstanceOf(
-      BadRequestError,
-    )
+    await expect(
+      service.createEntry({ body: 'hi', timeZone: 'Mars/Base', tags: [] }),
+    ).rejects.toBeInstanceOf(BadRequestError)
   })
 
   it('stores the entry for the service user, in one transaction', async () => {
     const { tx, db, service } = setup()
-    await service.createEntry({ body: 'hi' })
+    await service.createEntry({ body: 'hi', timeZone: 'UTC', tags: [] })
 
     expect(db.$transaction).toHaveBeenCalledTimes(1)
     expect(tx.entry.create.mock.calls[0][0].data.userId).toBe('u1')
@@ -85,14 +87,19 @@ describe('EntryService.createEntry', () => {
 
   it('de-duplicates tags case-insensitively and scopes them to the user', async () => {
     const { tx, service } = setup()
-    await service.createEntry({ body: 'hi', tags: ['Work', 'work', '  WORK ', 'Home', ' '] })
+    await service.createEntry({
+      body: 'hi',
+      timeZone: 'UTC',
+      tags: ['Work', 'work', '  WORK ', 'Home', ' '],
+    })
 
     const upserts = tx.tag.upsert.mock.calls.map(([arg]) => arg)
     expect(upserts).toHaveLength(2)
     expect(upserts[0]).toMatchObject({
       where: { userId_normalizedName: { userId: 'u1', normalizedName: 'work' } },
       create: { userId: 'u1', name: 'Work', normalizedName: 'work' },
-      update: {},
+      // Re-using a soft-deleted tag restores it
+      update: { deletedAt: null },
     })
     expect(tx.entryTag.createMany.mock.calls[0][0].data).toEqual([
       { entryId: 'e1', tagId: 'id-work' },
@@ -100,10 +107,20 @@ describe('EntryService.createEntry', () => {
     ])
   })
 
-  it('returns the entry with flattened tags', async () => {
+  it('returns the EntrySchema response shape', async () => {
     const { service } = setup()
-    const entry = await service.createEntry({ body: 'hi', tags: ['Work'] })
-    expect(entry.tags).toEqual([{ id: 't1', name: 'Work' }])
+    const entry = await service.createEntry({ body: 'hi', timeZone: 'UTC', tags: ['Work'] })
+
+    expect(entry).toEqual({
+      id: 'e1',
+      title: null,
+      body: 'hello',
+      writtenAt: '2026-10-30T00:00:00.000Z',
+      entryDate: '2026-10-30',
+      createdAt: '2026-10-30T00:00:00.000Z',
+      updatedAt: '2026-10-30T00:00:00.000Z',
+      tags: [{ id: 't1', name: 'Work' }],
+    })
   })
 })
 

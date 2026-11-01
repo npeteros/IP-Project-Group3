@@ -20,7 +20,8 @@ vi.mock('@/src/server/entry/entry.service', () => ({
 import { POST } from '@/app/api/v1/entries/route'
 import { DELETE, PATCH } from '@/app/api/v1/entries/[id]/route'
 
-const ctx = { params: Promise.resolve({ id: 'e1' }) } as never
+const ID = '00000000-0000-4000-8000-000000000001'
+const ctx = { params: Promise.resolve({ id: ID }) } as never
 
 function req(method: string, body?: unknown, raw?: string) {
   return new Request('http://localhost/api/v1/entries', {
@@ -44,6 +45,8 @@ describe('POST /api/v1/entries', () => {
 
     expect(res.status).toBe(201)
     expect(await res.json()).toEqual({ id: 'e1' })
+    // The service gets the parsed body, with the schema defaults applied
+    expect(service.createEntry).toHaveBeenCalledWith({ body: 'hi', timeZone: 'UTC', tags: [] })
   })
 
   it('responds 400 VALIDATION_ERROR for an invalid body', async () => {
@@ -73,7 +76,22 @@ describe('PATCH /api/v1/entries/[id]', () => {
     const res = await PATCH(req('PATCH', { body: 'new' }), ctx)
 
     expect(res.status).toBe(200)
-    expect(service.updateEntry).toHaveBeenCalledWith('e1', { body: 'new' })
+    expect(service.updateEntry).toHaveBeenCalledWith(ID, { body: 'new' })
+  })
+
+  it('responds 400 for a non-uuid id without calling the service', async () => {
+    const badCtx = { params: Promise.resolve({ id: 'e1' }) } as never
+    const res = await PATCH(req('PATCH', { body: 'new' }), badCtx)
+
+    expect(res.status).toBe(400)
+    expect(service.updateEntry).not.toHaveBeenCalled()
+  })
+
+  it('responds 400 when no field is being changed', async () => {
+    const res = await PATCH(req('PATCH', {}), ctx)
+
+    expect(res.status).toBe(400)
+    expect(service.updateEntry).not.toHaveBeenCalled()
   })
 
   it('maps NotFoundError to 404', async () => {
@@ -89,7 +107,7 @@ describe('DELETE /api/v1/entries/[id]', () => {
 
     expect(res.status).toBe(204)
     expect(await res.text()).toBe('')
-    expect(service.deleteEntry).toHaveBeenCalledWith('e1')
+    expect(service.deleteEntry).toHaveBeenCalledWith(ID)
   })
 
   it('maps NotFoundError (already deleted) to 404', async () => {
