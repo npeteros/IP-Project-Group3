@@ -1,7 +1,12 @@
 import type { PrismaClient } from '@/src/generated/prisma/client'
 import prisma from '@/src/lib/prisma'
+import type {
+  EntryCreateOutput,
+  EntryListQueryOutput,
+  EntryUpdateOutput,
+} from '@/src/server/entry/schemas'
 
-// Placeholder types until the entry schemas (#15) and Prisma models land
+// DB-shaped placeholder until #16 derives it from the generated Prisma types
 export type EntryTag = { id: string; name: string }
 
 export type Entry = {
@@ -16,25 +21,6 @@ export type Entry = {
   tags: EntryTag[]
 }
 
-export type EntryListInput = {
-  skip?: number
-  take?: number
-  searchText?: string
-  tagId?: string
-  entryStartDate?: string
-  entryEndDate?: string
-}
-
-export type EntryCreateInput = {
-  title?: string
-  body: string
-  writtenAt?: string
-  timeZone?: string
-  tags?: string[]
-}
-
-export type EntryUpdateInput = Partial<EntryCreateInput>
-
 /** Entry reads and writes, scoped to one user. Implemented in #16 (queries) and #17 (mutations). */
 export class EntryService {
   constructor(
@@ -42,7 +28,9 @@ export class EntryService {
     private readonly db: PrismaClient = prisma,
   ) {}
 
-  async findManyEntries(_input: EntryListInput): Promise<{ entries: Entry[]; total: number }> {
+  async findManyEntries(
+    _input: EntryListQueryOutput,
+  ): Promise<{ entries: Entry[]; total: number }> {
     throw new Error('Not implemented')
   }
 
@@ -50,11 +38,11 @@ export class EntryService {
     throw new Error('Not implemented')
   }
 
-  async createEntry(_input: EntryCreateInput): Promise<Entry> {
+  async createEntry(_input: EntryCreateOutput): Promise<Entry> {
     throw new Error('Not implemented')
   }
 
-  async updateEntry(_id: string, _input: EntryUpdateInput): Promise<Entry> {
+  async updateEntry(_id: string, _input: EntryUpdateOutput): Promise<Entry> {
     throw new Error('Not implemented')
   }
 
