@@ -1,5 +1,5 @@
 import { withAuth } from '@/src/server/api/handler'
-import { EntryIdSchema } from '@/src/server/entry/entry.schemas'
+import { EntryIdSchema } from '@/src/server/entry/schemas'
 import { EntryService } from '@/src/server/entry/entry.service'
 
 export const GET = withAuth<RouteContext<'/api/v1/entries/[id]'>>(async ({ ctx, user }) => {
