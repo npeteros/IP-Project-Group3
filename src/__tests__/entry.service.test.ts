@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 import type { PrismaClient } from '@/src/generated/prisma/client'
-import { NotFoundError, BadRequestError } from '@/src/server/api/errors'
+import { NotFoundError } from '@/src/server/api/errors'
 import { EntryService } from '@/src/server/entry/entry.service'
 
 const now = new Date('2026-10-30T00:00:00.000Z')
@@ -45,41 +45,25 @@ function setup({ updated = 1 }: { updated?: number } = {}) {
 }
 
 describe('EntryService.createEntry', () => {
-  it('derives entryDate from writtenAt in the given time zone', async () => {
+  it('derives entryDate from writtenAt in Manila time', async () => {
     const { tx, service } = setup()
 
-    // 2026-01-01 03:30 UTC is still Dec 31 in New York and already Jan 1 in UTC
-    await service.createEntry({
-      body: 'hi',
-      writtenAt: '2026-01-01T03:30:00.000Z',
-      timeZone: 'America/New_York',
-      tags: [],
-    })
+    // 2025-12-31 17:30 UTC is already Jan 1 in Manila (UTC+8)
+    await service.createEntry({ body: 'hi', writtenAt: '2025-12-31T17:30:00.000Z', tags: [] })
     expect(tx.entry.create.mock.calls[0][0].data.entryDate).toEqual(
-      new Date('2025-12-31T00:00:00.000Z'),
-    )
-
-    await service.createEntry({
-      body: 'hi',
-      writtenAt: '2026-01-01T03:30:00.000Z',
-      timeZone: 'UTC',
-      tags: [],
-    })
-    expect(tx.entry.create.mock.calls[1][0].data.entryDate).toEqual(
       new Date('2026-01-01T00:00:00.000Z'),
     )
-  })
 
-  it('rejects an unknown time zone', async () => {
-    const { service } = setup()
-    await expect(
-      service.createEntry({ body: 'hi', timeZone: 'Mars/Base', tags: [] }),
-    ).rejects.toBeInstanceOf(BadRequestError)
+    // The offset in writtenAt doesn't matter, only the instant it names
+    await service.createEntry({ body: 'hi', writtenAt: '2026-01-01T23:30:00-05:00', tags: [] })
+    expect(tx.entry.create.mock.calls[1][0].data.entryDate).toEqual(
+      new Date('2026-01-02T00:00:00.000Z'),
+    )
   })
 
   it('stores the entry for the service user, in one transaction', async () => {
     const { tx, db, service } = setup()
-    await service.createEntry({ body: 'hi', timeZone: 'UTC', tags: [] })
+    await service.createEntry({ body: 'hi', tags: [] })
 
     expect(db.$transaction).toHaveBeenCalledTimes(1)
     expect(tx.entry.create.mock.calls[0][0].data.userId).toBe('u1')
@@ -87,19 +71,15 @@ describe('EntryService.createEntry', () => {
 
   it('de-duplicates tags case-insensitively and scopes them to the user', async () => {
     const { tx, service } = setup()
-    await service.createEntry({
-      body: 'hi',
-      timeZone: 'UTC',
-      tags: ['Work', 'work', '  WORK ', 'Home', ' '],
-    })
+    await service.createEntry({ body: 'hi', tags: ['Work', 'work', '  WORK ', 'Home', ' '] })
 
     const upserts = tx.tag.upsert.mock.calls.map(([arg]) => arg)
     expect(upserts).toHaveLength(2)
     expect(upserts[0]).toMatchObject({
       where: { userId_normalizedName: { userId: 'u1', normalizedName: 'work' } },
       create: { userId: 'u1', name: 'Work', normalizedName: 'work' },
-      // Re-using a soft-deleted tag restores it
-      update: { deletedAt: null },
+      // An existing tag keeps its original spelling
+      update: {},
     })
     expect(tx.entryTag.createMany.mock.calls[0][0].data).toEqual([
       { entryId: 'e1', tagId: 'id-work' },
@@ -109,7 +89,7 @@ describe('EntryService.createEntry', () => {
 
   it('returns the EntrySchema response shape', async () => {
     const { service } = setup()
-    const entry = await service.createEntry({ body: 'hi', timeZone: 'UTC', tags: ['Work'] })
+    const entry = await service.createEntry({ body: 'hi', tags: ['Work'] })
 
     expect(entry).toEqual({
       id: 'e1',
@@ -151,10 +131,8 @@ describe('EntryService.updateEntry', () => {
     await service.updateEntry('e1', { body: 'x' })
     expect(tx.entry.updateMany.mock.calls[0][0].data.entryDate).toBeUndefined()
 
-    await service.updateEntry('e1', {
-      writtenAt: '2026-06-01T20:00:00.000Z',
-      timeZone: 'Asia/Manila',
-    })
+    // 8pm UTC on Jun 1 is Jun 2 in Manila
+    await service.updateEntry('e1', { writtenAt: '2026-06-01T20:00:00.000Z' })
     expect(tx.entry.updateMany.mock.calls[1][0].data.entryDate).toEqual(
       new Date('2026-06-02T00:00:00.000Z'),
     )

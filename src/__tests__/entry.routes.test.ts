@@ -46,7 +46,7 @@ describe('POST /api/v1/entries', () => {
     expect(res.status).toBe(201)
     expect(await res.json()).toEqual({ id: 'e1' })
     // The service gets the parsed body, with the schema defaults applied
-    expect(service.createEntry).toHaveBeenCalledWith({ body: 'hi', timeZone: 'UTC', tags: [] })
+    expect(service.createEntry).toHaveBeenCalledWith({ body: 'hi', tags: [] })
   })
 
   it('responds 400 VALIDATION_ERROR for an invalid body', async () => {

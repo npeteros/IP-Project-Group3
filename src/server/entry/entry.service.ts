@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from '@/src/generated/prisma/client'
 import prisma from '@/src/lib/prisma'
-import { BadRequestError, ConflictError, NotFoundError } from '@/src/server/api/errors'
+import { calendarDateToDbDate, dbDateToCalendarDate, toCalendarDate } from '@/src/lib/timezone'
+import { ConflictError, NotFoundError } from '@/src/server/api/errors'
 import {
   normalizeTagName,
   type Entry,
@@ -10,12 +11,9 @@ import {
   type EntryUpdateOutput,
 } from '@/src/server/entry/schemas'
 
-const DEFAULT_TIME_ZONE = 'UTC'
-
-/** Loads an entry's live tags through the `EntryTag` join, as `{ id, name }`. */
+/** Loads an entry's tags through the `EntryTag` join, as `{ id, name }`. */
 const ENTRY_INCLUDE = {
   tags: {
-    where: { tag: { deletedAt: null } },
     select: { tag: { select: { id: true, name: true } } },
     orderBy: { createdAt: 'asc' },
   },
@@ -23,39 +21,23 @@ const ENTRY_INCLUDE = {
 
 type EntryRow = Prisma.EntryGetPayload<{ include: typeof ENTRY_INCLUDE }>
 
-/** Maps a DB row to the `EntrySchema` response shape. `entryDate` is a `@db.Date`, so its UTC date is the calendar date. */
+/** Maps a DB row to the `EntrySchema` response shape. */
 function toEntry(row: EntryRow): Entry {
   return {
     id: row.id,
     title: row.title,
     body: row.body,
     writtenAt: row.writtenAt.toISOString(),
-    entryDate: row.entryDate.toISOString().slice(0, 10),
+    entryDate: dbDateToCalendarDate(row.entryDate),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     tags: row.tags.map(({ tag }) => tag),
   }
 }
 
-/**
- * The calendar day `writtenAt` falls on in `timeZone`, as a UTC-midnight Date
- * (what a `@db.Date` column stores). 11pm on Jan 1 in New York is Jan 1, not Jan 2.
- */
-function toEntryDate(writtenAt: Date, timeZone: string) {
-  let parts: Intl.DateTimeFormatPart[]
-  try {
-    parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).formatToParts(writtenAt)
-  } catch {
-    throw new BadRequestError(`Unknown time zone "${timeZone}".`)
-  }
-
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value
-  return new Date(`${part('year')}-${part('month')}-${part('day')}T00:00:00.000Z`)
+/** The day `writtenAt` falls on in the app time zone, ready for the `entryDate` column. */
+function toEntryDate(writtenAt: Date) {
+  return calendarDateToDbDate(toCalendarDate(writtenAt))
 }
 
 function isUniqueViolation(error: unknown) {
@@ -81,11 +63,11 @@ export class EntryService {
           { body: { contains: searchText, mode: 'insensitive' } },
         ],
       }),
-      ...(tagId && { tags: { some: { tagId, tag: { deletedAt: null } } } }),
+      ...(tagId && { tags: { some: { tagId } } }),
       ...((entryStartDate || entryEndDate) && {
         entryDate: {
-          ...(entryStartDate && { gte: new Date(`${entryStartDate}T00:00:00.000Z`) }),
-          ...(entryEndDate && { lte: new Date(`${entryEndDate}T00:00:00.000Z`) }),
+          ...(entryStartDate && { gte: calendarDateToDbDate(entryStartDate) }),
+          ...(entryEndDate && { lte: calendarDateToDbDate(entryEndDate) }),
         },
       }),
     }
@@ -117,7 +99,7 @@ export class EntryService {
 
   async createEntry(input: EntryCreateOutput): Promise<Entry> {
     const writtenAt = input.writtenAt ? new Date(input.writtenAt) : new Date()
-    const entryDate = toEntryDate(writtenAt, input.timeZone)
+    const entryDate = toEntryDate(writtenAt)
 
     return this.write(async (tx) => {
       const entry = await tx.entry.create({
@@ -138,7 +120,7 @@ export class EntryService {
 
   async updateEntry(id: string, input: EntryUpdateOutput): Promise<Entry> {
     const writtenAt = input.writtenAt === undefined ? undefined : new Date(input.writtenAt)
-    const entryDate = writtenAt && toEntryDate(writtenAt, input.timeZone ?? DEFAULT_TIME_ZONE)
+    const entryDate = writtenAt && toEntryDate(writtenAt)
 
     return this.write(async (tx) => {
       // The ownership and soft-delete filters live in the write itself, so a
@@ -201,12 +183,12 @@ export class EntryService {
 
     const tagIds: string[] = []
     for (const [normalizedName, name] of byNormalized) {
-      // An existing tag keeps its original spelling; a soft-deleted one is restored
-      // so the link isn't hidden by the `deletedAt: null` filter on reads.
+      // Update is empty on purpose: an existing tag keeps the spelling it was created with.
+      // Deleted tags are gone (hard delete), so a re-used name always creates a new tag.
       const tag = await tx.tag.upsert({
         where: { userId_normalizedName: { userId: this.userId, normalizedName } },
         create: { userId: this.userId, name, normalizedName },
-        update: { deletedAt: null },
+        update: {},
         select: { id: true },
       })
       tagIds.push(tag.id)
