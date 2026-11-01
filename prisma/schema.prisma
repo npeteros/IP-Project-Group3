@@ -22,6 +22,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  entries       Entry[]
+  tags          Tag[]
 
   @@unique([email])
   @@map("user")
@@ -73,4 +75,55 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+enum EntryTagSource {
+  MANUAL
+  AI_SUGGESTED
+}
+
+model Entry {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  body      String     @db.Text
+  writtenAt DateTime   @default(now()) @db.Timestamptz(3)
+  entryDate DateTime   @db.Date
+  createdAt DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime?  @db.Timestamptz(3)
+  tags      EntryTag[]
+
+  @@index([userId, entryDate])
+  @@index([userId, writtenAt])
+  @@map("entry")
+}
+
+model Tag {
+  id             String     @id @default(uuid()) @db.Uuid
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  normalizedName String
+  createdAt      DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime   @updatedAt @db.Timestamptz(3)
+  deletedAt      DateTime?  @db.Timestamptz(3)
+  entries        EntryTag[]
+
+  @@unique([userId, normalizedName])
+  @@map("tag")
+}
+
+model EntryTag {
+  entryId   String         @db.Uuid
+  entry     Entry          @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  tagId     String         @db.Uuid
+  tag       Tag            @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  source    EntryTagSource @default(MANUAL)
+  createdAt DateTime       @default(now()) @db.Timestamptz(3)
+
+  @@id([entryId, tagId])
+  @@index([tagId])
+  @@map("entry_tag")
 }
