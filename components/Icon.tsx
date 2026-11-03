@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import type { IconName } from "@/lib/constants";
+import type { ReactNode } from 'react'
+import type { IconName } from '@/src/lib/constants'
 
 const PATHS: Record<IconName, ReactNode> = {
   book: (
@@ -48,26 +48,53 @@ const PATHS: Record<IconName, ReactNode> = {
   flame: (
     <path d="M12 2c.7 2.7-2.6 4.4-2.6 7.8a2.6 2.6 0 0 0 5.2 0c0-.9-.5-1.6-.5-1.6 1.4.8 2.4 2.6 2.4 4.4A4.5 4.5 0 0 1 12 17.1a4.5 4.5 0 0 1-4.5-4.5C7.5 8 9.5 5.5 12 2z" />
   ),
-};
+  quote: (
+    <>
+      <path d="M4 17.5V13a6 6 0 0 1 6-6" />
+      <path d="M4 13h5v5.5H4z" />
+      <path d="M14 17.5V13a6 6 0 0 1 6-6" />
+      <path d="M14 13h5v5.5h-5z" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  'eye-off': (
+    <>
+      <path d="M9.9 5.2A9.6 9.6 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.1 6.1A17 17 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 4.1-.9" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      <path d="M3 3l18 18" />
+    </>
+  ),
+  'log-out': (
+    <>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="M16 17l5-5-5-5M21 12H9" />
+    </>
+  ),
+}
 
 type IconProps = {
-  name: IconName;
-  size?: number;
-  strokeWidth?: number;
-  className?: string;
-};
+  name: IconName
+  size?: number
+  strokeWidth?: number
+  className?: string
+}
 
 // Icons inherit colour from `currentColor`, so tint them with text-* classes.
 export function Icon({ name, size = 18, strokeWidth = 2, className }: IconProps) {
-  const filled = name === "flame";
+  const filled = name === 'flame'
 
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke={filled ? "none" : "currentColor"}
+      fill={filled ? 'currentColor' : 'none'}
+      stroke={filled ? 'none' : 'currentColor'}
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -76,5 +103,5 @@ export function Icon({ name, size = 18, strokeWidth = 2, className }: IconProps)
     >
       {PATHS[name]}
     </svg>
-  );
+  )
 }

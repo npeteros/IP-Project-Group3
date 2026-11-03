@@ -1,6 +1,10 @@
-import { MobileTabBar, Sidebar } from "@/components/AppNav";
+import { redirect } from 'next/navigation'
+import { MobileTabBar, Sidebar } from '@/components/AppNav'
+import { getSession } from '@/src/lib/auth'
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  if (!(await getSession())) redirect('/login')
+
   return (
     <div className="flex h-dvh overflow-hidden bg-bg text-neutral-900">
       <Sidebar />
@@ -9,5 +13,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <MobileTabBar />
       </div>
     </div>
-  );
+  )
 }
