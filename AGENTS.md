@@ -96,6 +96,10 @@ Imports use the `@/` alias from the repo root, e.g. `@/src/server/entry/schemas`
 between versions.
 
 - Register all agents, tools, workflows and scorers in `src/mastra/index.ts`.
+- Follow `src/mastra/AGENTS.md` for all work under `src/mastra/`.
+- Every agent lists `aiUsageProcessor` in both `inputProcessors` and `outputProcessors`, so the
+  per-user rate limit and `AiUsageLog` rows apply however it's called. User-triggered calls pass
+  `requestContext: createUserRequestContext(userId)`, including agent calls inside workflow steps.
 - Use the `dev` and `build` scripts from `package.json` instead of running `mastra dev` or
   `mastra build` directly.
 - Resources: [Mastra Documentation](https://mastra.ai/llms.txt),
