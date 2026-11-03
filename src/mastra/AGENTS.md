@@ -52,7 +52,7 @@ stops the run.
 
 ## Mastra behaviour this layer relies on
 
-Checked by hand on 1.79 and against the 1.80 types and runtime. Recheck if the version changes.
+Checked against the 1.80 types and runtime. Recheck if the version changes.
 
 - **Processor `state`.** One object per request, keyed by `processor.id`, shared across all hooks
   _including_ `processInput`. The docs leave that hook out. Use a unique `id`.
