@@ -5,6 +5,7 @@ export const API_ERROR_CODES = [
   'FORBIDDEN',
   'NOT_FOUND',
   'CONFLICT',
+  'TOO_MANY_REQUESTS',
   'INTERNAL_ERROR',
 ] as const
 
@@ -55,6 +56,13 @@ export class NotFoundError extends AppError {
 export class ConflictError extends AppError {
   constructor(message = 'This already exists.') {
     super(409, 'CONFLICT', message)
+  }
+}
+
+/** Over a rate limit (e.g. the per-user AI call limit). */
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Too many requests. Try again later.') {
+    super(429, 'TOO_MANY_REQUESTS', message)
   }
 }
 

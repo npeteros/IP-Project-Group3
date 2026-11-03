@@ -93,7 +93,7 @@ const planActivities = createStep({
   outputSchema: z.object({
     activities: z.string(),
   }),
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData, mastra, requestContext }) => {
     const forecast = inputData
 
     if (!forecast) {
@@ -147,18 +147,27 @@ const planActivities = createStep({
 
       Maintain this exact formatting for consistency, using the emoji and section headers as shown.`
 
-    const response = await agent.stream([
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ])
+    // Not propagated automatically: pass it so usage is attributed to (and limited for) the run's user.
+    const response = await agent.stream(
+      [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      { requestContext },
+    )
 
     let activitiesText = ''
 
     for await (const chunk of response.textStream) {
       process.stdout.write(chunk)
       activitiesText += chunk
+    }
+
+    // A tripwire (e.g. over the AI rate limit) ends the stream with no text; fail the step instead.
+    if (response.tripwire) {
+      throw new Error(`Activity planning blocked: ${response.tripwire.reason}`)
     }
 
     return {
