@@ -30,6 +30,8 @@ export type IconName =
   | 'file-text'
   | 'info'
   | 'grip'
+  | 'users'
+  | 'frame'
 
 export type Tone = 'cloud' | 'sage'
 

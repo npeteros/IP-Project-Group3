@@ -11,6 +11,8 @@ export type Palette = {
   sage: Scale<100 | 200 | 500 | 700>
   cloud: Scale<100 | 200 | 500 | 700>
   amber: Scale<100 | 200 | 500 | 700>
+  /** Only marks difficult moods (e.g. Anxious) in charts. */
+  rose: Scale<500>
   shadows: { sm: string; md: string }
 }
 
@@ -48,6 +50,7 @@ export const palette: Palette = {
     500: 'oklch(62% 0.07 55)',
     700: 'oklch(42% 0.08 55)',
   },
+  rose: { 500: 'oklch(55% 0.06 30)' },
   shadows: {
     sm: '0 1px 2px oklch(22% 0.012 75 / 0.06), 0 1px 1px oklch(22% 0.012 75 / 0.04)',
     md: '0 10px 28px oklch(22% 0.012 75 / 0.10)',
@@ -90,13 +93,14 @@ export const darkPalette: Palette = {
     500: 'oklch(72% 0.09 55)',
     700: 'oklch(85% 0.08 55)',
   },
+  rose: { 500: 'oklch(68% 0.07 30)' },
   shadows: {
     sm: '0 1px 2px oklch(0% 0 0 / 0.35)',
     md: '0 10px 28px oklch(0% 0 0 / 0.5)',
   },
 }
 
-const SCALES = ['neutral', 'sage', 'cloud', 'amber'] as const
+const SCALES = ['neutral', 'sage', 'cloud', 'amber', 'rose'] as const
 
 /** Flattens a palette into `--mo-*` custom properties, e.g. `--mo-sage-100`. */
 export function paletteCssVariables(p: Palette): Record<string, string> {

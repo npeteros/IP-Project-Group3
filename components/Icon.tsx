@@ -118,6 +118,20 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   grip: <path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01" />,
+  users: (
+    <>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+      <circle cx="10" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </>
+  ),
+  frame: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M9 9h6v6H9z" />
+    </>
+  ),
 }
 
 type IconProps = {
