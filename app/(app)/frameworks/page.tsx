@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Icon } from '@/components/Icon'
 import { Card } from '@/components/ui'
 import { FRAMEWORKS_PAGE } from '@/src/lib/constants'
@@ -16,28 +17,31 @@ export default function FrameworksPage() {
 
       <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
         {FRAMEWORKS.map((framework) => (
-          <Card
+          <Link
             key={framework.id}
-            className="flex items-center gap-3.5 rounded-[14px] p-4 md:flex-col md:items-start md:rounded-2xl md:p-[22px]"
+            href={`/frameworks/${framework.id}`}
+            className="group rounded-[14px] text-neutral-900 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-cloud-200 focus-visible:outline-none md:rounded-2xl"
           >
-            <div className="flex size-10 flex-none items-center justify-center rounded-[11px] bg-sage-100 text-sage-700 md:size-11 md:rounded-xl">
-              <Icon name={framework.icon} size={20} strokeWidth={1.75} />
-            </div>
-            <div className="flex flex-1 flex-col gap-0.5 md:gap-1">
-              <h3 className={typography.cardTitle}>{framework.name}</h3>
-              <p className="text-xs leading-[1.4] text-neutral-600 md:text-[13px] md:leading-[1.5]">
-                {framework.description}
-              </p>
-            </div>
-            <span className="text-[11px] leading-none font-medium text-neutral-400 md:mt-auto md:text-xs">
-              {framework.duration}
-            </span>
-          </Card>
+            <Card className="flex h-full items-center gap-3.5 rounded-[14px] p-4 transition-shadow group-hover:shadow-md md:flex-col md:items-start md:rounded-2xl md:p-[22px]">
+              <div className="flex size-10 flex-none items-center justify-center rounded-[11px] bg-sage-100 text-sage-700 md:size-11 md:rounded-xl">
+                <Icon name={framework.icon} size={20} strokeWidth={1.75} />
+              </div>
+              <div className="flex flex-1 flex-col gap-0.5 md:gap-1">
+                <h3 className={typography.cardTitle}>{framework.name}</h3>
+                <p className="text-xs leading-[1.4] text-neutral-600 md:text-[13px] md:leading-[1.5]">
+                  {framework.description}
+                </p>
+              </div>
+              <span className="text-[11px] leading-none font-medium text-neutral-400 md:mt-auto md:text-xs">
+                {framework.duration}
+              </span>
+            </Card>
+          </Link>
         ))}
 
-        <button
-          type="button"
-          className="flex items-center gap-3.5 rounded-[14px] border-[1.5px] border-dashed border-sage-200 p-4 text-sage-700 md:min-h-[180px] md:flex-col md:justify-center md:gap-2.5 md:rounded-2xl md:p-[22px]"
+        <Link
+          href="/frameworks/new"
+          className="flex items-center gap-3.5 rounded-[14px] border-[1.5px] border-dashed border-sage-200 p-4 text-sage-700 hover:border-sage-500 hover:text-sage-700 md:min-h-[180px] md:flex-col md:justify-center md:gap-2.5 md:rounded-2xl md:p-[22px]"
         >
           <span className="flex size-10 flex-none items-center justify-center md:size-auto">
             <Icon name="plus" size={20} />
@@ -45,7 +49,7 @@ export default function FrameworksPage() {
           <span className="text-sm leading-[1.3] font-semibold">
             {FRAMEWORKS_PAGE.buildYourOwnLabel}
           </span>
-        </button>
+        </Link>
       </div>
     </div>
   )

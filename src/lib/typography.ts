@@ -13,7 +13,7 @@ export const typography = {
   // Big numbers on stat cards
   stat: 'font-serif text-[32px] leading-none font-extrabold',
   // Auth page headline
-  authTitle: 'font-serif text-[28px] leading-[1.2] font-medium lg:text-[32px]',
+  authTitle: 'font-serif text-[28px] leading-[1.2] font-medium lg:text-[30px]',
   // Form field labels
   fieldLabel: 'font-sans text-[13px] leading-none font-medium text-neutral-900',
   // App wordmark next to the logo

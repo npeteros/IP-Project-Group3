@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { APP_NAME, type IconName, type Tone } from '@/src/lib/constants'
 import { STREAK_DAYS, type JournalEntry } from '@/src/lib/placeholders/journal'
 import { typography } from '@/src/lib/typography'
@@ -59,14 +60,25 @@ export function Tag({
   )
 }
 
-export function FilterChip({ label, active = false }: { label: string; active?: boolean }) {
+/** Filter pill. Pass `onClick` only from client components. */
+export function FilterChip({
+  label,
+  active = false,
+  onClick,
+}: {
+  label: string
+  active?: boolean
+  onClick?: () => void
+}) {
   return (
     <button
       type="button"
+      aria-pressed={active}
+      onClick={onClick}
       className={`${typography.chip} flex-none rounded-full px-4 py-2 lg:px-[18px] lg:py-[9px] ${
         active
           ? 'bg-neutral-900 font-semibold text-surface'
-          : 'border border-neutral-200 bg-surface font-medium text-neutral-600'
+          : 'border border-neutral-200 bg-surface font-medium text-neutral-600 hover:text-neutral-900'
       }`}
     >
       {label}
@@ -88,9 +100,20 @@ export function Card({
   )
 }
 
-export function EntryCard({ entry, tagClassName }: { entry: JournalEntry; tagClassName?: string }) {
-  return (
-    <Card className="flex flex-col gap-2 p-[18px] lg:p-5">
+export function EntryCard({
+  entry,
+  href,
+  tagClassName,
+}: {
+  entry: JournalEntry
+  /** Makes the whole card a link, e.g. to the entry editor. */
+  href?: string
+  tagClassName?: string
+}) {
+  const card = (
+    <Card
+      className={`flex h-full flex-col gap-2 p-[18px] lg:p-5 ${href ? 'transition-shadow group-hover:shadow-md' : ''}`}
+    >
       <span className={typography.caption}>{entry.date}</span>
       <h3 className={typography.entryTitle}>{entry.title}</h3>
       <p className={typography.bodySmall}>{entry.excerpt}</p>
@@ -100,6 +123,16 @@ export function EntryCard({ entry, tagClassName }: { entry: JournalEntry; tagCla
         ))}
       </div>
     </Card>
+  )
+
+  if (!href) return card
+  return (
+    <Link
+      href={href}
+      className="group rounded-2xl text-neutral-900 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-cloud-200 focus-visible:outline-none"
+    >
+      {card}
+    </Link>
   )
 }
 

@@ -105,14 +105,14 @@ export default function OnboardingPage() {
 
         <div className="flex flex-col gap-5 lg:mt-3 lg:flex-row lg:items-center">
           <Link
-            href="/journal"
+            href={ONBOARDING.getStartedHref}
             className="flex h-[52px] items-center justify-center rounded-[14px] bg-neutral-900 px-[30px] text-[15px] leading-none font-semibold text-surface shadow-md hover:text-surface"
           >
             <span className="lg:hidden">{ONBOARDING.primaryCta}</span>
             <span className="hidden lg:inline">{ONBOARDING.primaryCtaDesktop}</span>
           </Link>
           <Link
-            href="/journal"
+            href={ONBOARDING.getStartedHref}
             className="text-center text-[13px] leading-none font-semibold text-neutral-400 lg:hidden"
           >
             {ONBOARDING.skipLabel}
