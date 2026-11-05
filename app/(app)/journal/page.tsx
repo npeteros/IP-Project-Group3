@@ -1,11 +1,7 @@
 import { Icon } from '@/components/Icon'
 import { EntryCard, FilterChip, StreakBadge } from '@/components/ui'
-import {
-  JOURNAL_ENTRIES,
-  JOURNAL_FILTERS,
-  NEW_ENTRY_LABEL,
-  SEARCH_PLACEHOLDER,
-} from '@/src/lib/constants'
+import { NEW_ENTRY_LABEL, SEARCH_PLACEHOLDER } from '@/src/lib/constants'
+import { JOURNAL_ENTRIES, JOURNAL_FILTERS } from '@/src/lib/placeholders/journal'
 import { typography } from '@/src/lib/typography'
 
 export default function JournalPage() {
