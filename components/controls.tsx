@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { IconName } from '@/src/lib/constants'
 import { Icon } from './Icon'
 
@@ -136,12 +136,12 @@ export function Toggle({
       aria-label={label}
       onClick={() => setOn(!on)}
       className={`relative h-6 w-[42px] flex-none rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-cloud-200 focus-visible:outline-none ${
-        on ? 'bg-neutral-900' : 'bg-neutral-200'
+        on ? 'bg-neutral-900' : 'bg-neutral-300'
       }`}
     >
       <span
-        className={`absolute top-[3px] size-[18px] rounded-full bg-surface transition-[left] ${
-          on ? 'left-[21px]' : 'left-[3px]'
+        className={`absolute top-[3px] size-[18px] rounded-full transition-[left] ${
+          on ? 'left-[21px] bg-surface' : 'left-[3px] bg-neutral-400'
         }`}
       />
     </button>
@@ -189,7 +189,7 @@ export function RadioList<T extends string>({
               <span className="size-1.5 rounded-full bg-surface" />
             </span>
           ) : (
-            <span className="size-[17px] flex-none rounded-full border-[1.5px] border-neutral-200" />
+            <span className="size-[17px] flex-none rounded-full border-[1.5px] border-neutral-400" />
           )}
         </span>
       )}
@@ -264,9 +264,21 @@ export function SubNav({
   const isActive = (item: SubNavItem & { exact?: boolean }) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)
 
+  const navRef = useRef<HTMLElement>(null)
+
+  // On narrow screens the strip scrolls sideways; keep the current item visible.
+  useEffect(() => {
+    const nav = navRef.current
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]')
+    if (!nav || !active || nav.scrollWidth <= nav.clientWidth) return
+    const offset = active.getBoundingClientRect().left - nav.getBoundingClientRect().left
+    nav.scrollLeft += offset - 20
+  }, [pathname])
+
   if (variant === 'tabs') {
     return (
       <nav
+        ref={navRef}
         aria-label={label}
         className="-mx-5 flex gap-6 overflow-x-auto border-b border-neutral-200 px-5 [scrollbar-width:none] md:mx-0 md:gap-7 md:px-0"
       >
@@ -293,6 +305,7 @@ export function SubNav({
 
   return (
     <nav
+      ref={navRef}
       aria-label={label}
       className="flex flex-none gap-2 overflow-x-auto [scrollbar-width:none] lg:w-[220px] lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-r lg:border-neutral-200 lg:px-5 lg:py-12"
     >

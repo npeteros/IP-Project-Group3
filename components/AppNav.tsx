@@ -57,8 +57,14 @@ export function Sidebar() {
   )
 }
 
+// Full-screen editing views: on mobile they replace the tab bar with their own Cancel / Save header.
+const FOCUSED_ROUTE = /^\/(journal|frameworks)\/[^/]+/
+
 export function MobileTabBar() {
   const isActive = useIsActive()
+  const pathname = usePathname()
+
+  if (FOCUSED_ROUTE.test(pathname)) return null
 
   return (
     <nav

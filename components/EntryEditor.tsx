@@ -280,7 +280,7 @@ export function EntryEditor({
             placeholder="How are you feeling today?"
             value={draft.body}
             onChange={(event) => update({ body: event.target.value })}
-            className="min-h-[180px] w-full resize-none bg-transparent text-[15px] leading-[1.7] outline-none [field-sizing:content] placeholder:text-neutral-400 lg:min-h-[240px] lg:text-[17px] lg:leading-[1.8]"
+            className="min-h-[96px] w-full resize-none bg-transparent text-[15px] leading-[1.7] outline-none [field-sizing:content] placeholder:text-neutral-400 lg:min-h-[120px] lg:text-[17px] lg:leading-[1.8]"
           />
 
           <div className="lg:mt-1.5">

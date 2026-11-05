@@ -11,7 +11,7 @@ export default async function GeneralSettingsPage() {
 
   return (
     <div className="flex max-w-[632px] flex-col gap-7 pt-2 lg:pt-0">
-      <h2 className={typography.sectionTitle}>General</h2>
+      <h2 className={`${typography.sectionTitle} hidden lg:block`}>General</h2>
 
       <SettingsGroup label="Appearance">
         <SettingsRow icon="sun" label="Theme">
