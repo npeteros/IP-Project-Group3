@@ -3,6 +3,7 @@ import {
   APP_TIME_ZONE,
   calendarDateToDbDate,
   dbDateToCalendarDate,
+  formatTodayTimestamp,
   toCalendarDate,
 } from '@/src/lib/timezone'
 
@@ -31,5 +32,16 @@ describe('timezone', () => {
     const dbDate = calendarDateToDbDate('2026-02-28')
     expect(dbDate.toISOString()).toBe('2026-02-28T00:00:00.000Z')
     expect(dbDateToCalendarDate(dbDate)).toBe('2026-02-28')
+  })
+})
+
+describe('formatTodayTimestamp', () => {
+  it('formats the Manila date and time', () => {
+    // 00:14 UTC is 8:14 AM in Manila
+    expect(formatTodayTimestamp(new Date('2026-08-25T00:14:00Z'))).toBe('Today, Aug 25 · 8:14 AM')
+  })
+
+  it('uses the Manila day, not the UTC day', () => {
+    expect(formatTodayTimestamp(new Date('2026-08-24T16:30:00Z'))).toBe('Today, Aug 25 · 12:30 AM')
   })
 })
