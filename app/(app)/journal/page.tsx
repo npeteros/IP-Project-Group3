@@ -1,6 +1,7 @@
 import { Icon } from '@/components/Icon'
 import { EntryCard, FilterChip, StreakBadge } from '@/components/ui'
-import { NEW_ENTRY_LABEL, SEARCH_PLACEHOLDER } from '@/src/lib/constants'
+import Link from 'next/link'
+import { NEW_ENTRY_HREF, NEW_ENTRY_LABEL, SEARCH_PLACEHOLDER } from '@/src/lib/constants'
 import { JOURNAL_ENTRIES, JOURNAL_FILTERS } from '@/src/lib/placeholders/journal'
 import { typography } from '@/src/lib/typography'
 
@@ -36,13 +37,13 @@ export default function JournalPage() {
         ))}
       </div>
 
-      <button
-        type="button"
+      <Link
+        href={NEW_ENTRY_HREF}
         aria-label={NEW_ENTRY_LABEL}
-        className="fixed right-5 bottom-24 flex size-14 items-center justify-center rounded-[18px] bg-neutral-900 text-surface shadow-md lg:hidden"
+        className="fixed right-5 bottom-24 flex size-14 items-center justify-center rounded-[18px] bg-neutral-900 text-surface shadow-md hover:text-surface lg:hidden"
       >
         <Icon name="plus" size={22} strokeWidth={2.2} />
-      </button>
+      </Link>
     </div>
   )
 }

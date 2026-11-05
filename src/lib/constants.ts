@@ -47,12 +47,13 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Journal', href: '/journal', icon: 'book' },
   { label: 'Frameworks', href: '/frameworks', icon: 'layers' },
-  { label: 'Insights', href: '#', icon: 'chart' },
+  { label: 'Insights', href: '/insights', icon: 'chart' },
   { label: 'Chat', href: '/chat', icon: 'chat' },
-  { label: 'Settings', href: '#', icon: 'settings' },
+  { label: 'Settings', href: '/settings', icon: 'settings' },
 ]
 
 export const NEW_ENTRY_LABEL = 'New entry'
+export const NEW_ENTRY_HREF = '/journal/new'
 export const LOG_OUT_LABEL = 'Log out'
 
 export const SEARCH_PLACEHOLDER = 'Search entries'
