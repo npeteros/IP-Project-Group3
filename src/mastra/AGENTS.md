@@ -9,9 +9,9 @@ directory.
 2. Look up every Mastra API you use in `node_modules/@mastra/core/dist/docs/references/`, then in
    the `.d.ts` files under `node_modules/@mastra/*/dist`. Your training data for Mastra is out of
    date. Installed: `@mastra/core` 1.80, `@mastra/evals` 1.10.
-3. Read the closest existing file of the same kind and copy its pattern. `agents/weather-agent.ts`,
-   `tools/weather-tool.ts`, `workflows/weather-workflow.ts` and `evals/weather-agent.eval.ts` are
-   the references.
+3. Read the closest existing file of the same kind and copy its pattern. `agents/reflection-agent.ts`,
+   `tools/search-entries-tool.ts`, `tools/get-entry-tool.ts` and `evals/reflection-agent.eval.ts`
+   are the references.
 4. Check for an existing service or helper before adding one. AI usage and rate limiting already
    live in `guardrails/` and `src/server/ai-usage/`; don't duplicate them.
 5. For anything beyond a small change, propose a plan before writing code.

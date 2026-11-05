@@ -18,6 +18,12 @@ describe('openApiDocument', () => {
     expect(openApiDocument.servers).toEqual([{ url: '/api/v1' }])
   })
 
+  it('documents the authenticated AI SDK streaming chat endpoint and rate limit response', () => {
+    expect(openApiDocument.paths?.['/chat']?.post?.responses).toHaveProperty('200')
+    expect(openApiDocument.paths?.['/chat']?.post?.responses).toHaveProperty('401')
+    expect(openApiDocument.paths?.['/chat']?.post?.responses).toHaveProperty('429')
+  })
+
   it('requires the session cookie by default', () => {
     expect(openApiDocument.security).toEqual([{ sessionCookie: [] }])
     expect(openApiDocument.components?.securitySchemes?.sessionCookie).toMatchObject({
@@ -35,6 +41,7 @@ describe('openApiDocument', () => {
       'Forbidden',
       'NotFound',
       'Conflict',
+      'TooManyRequests',
       'InternalError',
     ])
     for (const response of Object.values(responses)) {

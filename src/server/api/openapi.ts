@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { createDocument, type ZodOpenApiPathsObject } from 'zod-openapi'
 import { APP_NAME } from '@/src/lib/constants'
 import { API_ERROR_CODES } from '@/src/server/api/errors'
+import { ChatRequestSchema } from '@/src/server/chat/schemas'
 
 /** The shared error body every route returns, matching `ApiErrorBody` in `handler.ts`. */
 export const ApiErrorSchema = z
@@ -30,11 +31,37 @@ export const errorResponses = {
   403: errorResponse('Forbidden', 'Signed in but not allowed.'),
   404: errorResponse('NotFound', "Missing, soft-deleted or another user's record."),
   409: errorResponse('Conflict', 'Clashes with an existing record.'),
+  429: errorResponse('TooManyRequests', 'The signed-in user has exceeded the AI call rate limit.'),
   500: errorResponse('InternalError', 'Unexpected server error.'),
 }
 
 // Each domain adds its paths here, relative to the `/api/v1` server, e.g. `...entryPaths`
-const paths: ZodOpenApiPathsObject = {}
+const paths: ZodOpenApiPathsObject = {
+  '/chat': {
+    post: {
+      operationId: 'streamChat',
+      summary: 'Stream a journal reflection response',
+      requestBody: {
+        required: true,
+        content: { 'application/json': { schema: ChatRequestSchema } },
+      },
+      responses: {
+        200: {
+          description: 'AI SDK UI stream.',
+          content: {
+            'text/event-stream': {
+              schema: z.string().meta({ description: 'AI SDK UI stream events.' }),
+            },
+          },
+        },
+        400: errorResponses[400],
+        401: errorResponses[401],
+        429: errorResponses[429],
+        500: errorResponses[500],
+      },
+    },
+  },
+}
 
 const document = createDocument({
   openapi: '3.2.0',

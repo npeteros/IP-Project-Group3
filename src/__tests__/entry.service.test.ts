@@ -44,6 +44,43 @@ function setup({ updated = 1 }: { updated?: number } = {}) {
   return { tx, db, service }
 }
 
+describe('EntryService.findManyEntries', () => {
+  it('filters by text, exact normalized tag name, date range, and the owning user', async () => {
+    const db = {
+      $transaction: vi.fn((queries: Promise<unknown>[]) => Promise.all(queries)),
+      entry: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+    }
+    const service = new EntryService('u1', db as unknown as PrismaClient)
+
+    await service.findManyEntries({
+      skip: 0,
+      take: 10,
+      searchText: 'work',
+      tagName: 'pro',
+      entryStartDate: '2026-10-01',
+      entryEndDate: '2026-10-31',
+    })
+
+    expect(db.entry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: 'u1',
+          deletedAt: null,
+          OR: [
+            { title: { contains: 'work', mode: 'insensitive' } },
+            { body: { contains: 'work', mode: 'insensitive' } },
+          ],
+          tags: { some: { tag: { normalizedName: 'pro' } } },
+          entryDate: { gte: expect.any(Date), lte: expect.any(Date) },
+        },
+      }),
+    )
+  })
+})
+
 describe('EntryService.createEntry', () => {
   it('derives entryDate from writtenAt in Manila time', async () => {
     const { tx, service } = setup()
