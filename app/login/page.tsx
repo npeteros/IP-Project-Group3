@@ -18,7 +18,7 @@ export default async function LoginPage() {
   return (
     <div className="flex min-h-dvh bg-bg text-neutral-900">
       {/* Quote panel, desktop only */}
-      <aside className="hidden w-[39%] flex-none flex-col justify-between bg-neutral-900 px-14 py-14 text-surface lg:flex">
+      <aside className="hidden w-[39%] flex-none flex-col justify-between bg-panel px-14 py-14 text-on-panel lg:flex">
         <Logo inverted name={LOGIN_BRAND_NAME} />
 
         <figure className="flex max-w-[460px] flex-col gap-5">

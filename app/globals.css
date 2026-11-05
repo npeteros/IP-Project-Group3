@@ -1,12 +1,14 @@
 @import 'tailwindcss';
 
-/* Colour values live in lib/palette.ts and are injected as --mo-* variables on <html>. */
+/* Colour values live in src/lib/palette.ts; app/layout.tsx injects them as --mo-* variables per theme. */
 @theme inline {
   --color-*: initial;
   --color-white: #fff;
   --color-transparent: transparent;
   --color-bg: var(--mo-bg);
   --color-surface: var(--mo-surface);
+  --color-panel: var(--mo-panel);
+  --color-on-panel: var(--mo-on-panel);
 
   --color-neutral-100: var(--mo-neutral-100);
   --color-neutral-200: var(--mo-neutral-200);

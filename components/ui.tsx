@@ -9,15 +9,15 @@ export function Logo({
   name = APP_NAME,
 }: {
   size?: 'md' | 'lg'
-  /** Light mark and text, for use on dark backgrounds. */
+  /** Mark and text for use on the brand `panel` background. */
   inverted?: boolean
   name?: string
 }) {
   const box = size === 'lg' ? 'size-8' : 'size-[30px]'
-  const markColors = inverted ? 'bg-surface text-neutral-900' : 'bg-neutral-900 text-surface'
+  const markColors = inverted ? 'bg-on-panel text-panel' : 'bg-neutral-900 text-surface'
 
   return (
-    <div className={`flex items-center gap-2.5 ${inverted ? 'text-surface' : ''}`}>
+    <div className={`flex items-center gap-2.5 ${inverted ? 'text-on-panel' : ''}`}>
       <div
         className={`${box} flex flex-none items-center justify-center rounded-[9px] ${markColors}`}
       >

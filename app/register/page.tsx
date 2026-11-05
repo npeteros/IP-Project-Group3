@@ -20,10 +20,10 @@ export default async function RegisterPage() {
   return (
     <div className="flex min-h-dvh bg-bg text-neutral-900">
       {/* Brand panel — desktop only */}
-      <aside className="hidden w-[39%] max-w-175 flex-none flex-col justify-between bg-neutral-900 px-14 py-14 text-surface lg:flex">
-        <Link href="/" className="w-fit text-surface hover:text-surface">
+      <aside className="hidden w-[39%] max-w-175 flex-none flex-col justify-between bg-panel px-14 py-14 text-on-panel lg:flex">
+        <Link href="/" className="w-fit text-on-panel hover:text-on-panel">
           <span className="flex items-center gap-2.5">
-            <span className="flex size-8 flex-none items-center justify-center rounded-[9px] bg-surface text-neutral-900">
+            <span className="flex size-8 flex-none items-center justify-center rounded-[9px] bg-on-panel text-panel">
               <Icon name="book" size={16} />
             </span>
             <span className="font-serif text-xl leading-none font-semibold">{APP_NAME}</span>
