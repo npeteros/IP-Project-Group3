@@ -52,7 +52,7 @@ export class EntryService {
   ) {}
 
   async findManyEntries(input: EntryListQueryOutput): Promise<EntryList> {
-    const { skip, take, searchText, tagId, entryStartDate, entryEndDate } = input
+    const { skip, take, searchText, tagName, tagId, entryStartDate, entryEndDate } = input
 
     const where: Prisma.EntryWhereInput = {
       userId: this.userId,
@@ -63,7 +63,14 @@ export class EntryService {
           { body: { contains: searchText, mode: 'insensitive' } },
         ],
       }),
-      ...(tagId && { tags: { some: { tagId } } }),
+      ...((tagId || tagName) && {
+        tags: {
+          some: {
+            ...(tagId && { tagId }),
+            ...(tagName && { tag: { name: { contains: tagName, mode: 'insensitive' } } }),
+          },
+        },
+      }),
       ...((entryStartDate || entryEndDate) && {
         entryDate: {
           ...(entryStartDate && { gte: calendarDateToDbDate(entryStartDate) }),

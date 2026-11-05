@@ -5,11 +5,11 @@ import { ContentRedactionProcessor } from '@/src/mastra/observability'
 
 function agentRunSpan() {
   return {
-    input: 'What is the weather in Manila?',
+    input: 'Help me reflect on my journal entry about Manila.',
     output: 'Sunny, 31°C',
     attributes: {
-      prompt: 'What is the weather in Manila?',
-      instructions: 'You are a helpful weather assistant.',
+      prompt: 'Help me reflect on my journal entry about Manila.',
+      instructions: 'You are a supportive journaling companion.',
       maxSteps: 5,
     },
   } as unknown as AnySpan

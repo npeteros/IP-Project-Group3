@@ -107,6 +107,7 @@ export const EntryListQuerySchema = z
       .trim()
       .transform((text) => text || undefined)
       .optional(),
+    tagName: z.string().trim().min(1).max(TAG_NAME_MAX_LENGTH).optional(),
     tagId: z.uuid().optional(),
     entryStartDate: z.iso.date().optional(),
     entryEndDate: z.iso.date().optional(),
