@@ -97,27 +97,38 @@ export const EntryIdSchema = z.object({
 export type EntryIdInput = z.input<typeof EntryIdSchema>
 export type EntryIdOutput = z.infer<typeof EntryIdSchema>
 
-/** `GET /api/v1/entries` query string. Values arrive as strings, so numbers are coerced. */
-export const EntryListQuerySchema = z
+const isValidEntryDateRange = ({
+  entryStartDate,
+  entryEndDate,
+}: {
+  entryStartDate?: string
+  entryEndDate?: string
+}) => !entryStartDate || !entryEndDate || entryStartDate <= entryEndDate
+
+const dateRangeError = {
+  message: 'The end date must be on or after the start date.',
+  path: ['entryEndDate'],
+}
+
+export const EntryListDateRangeSchema = z
   .object({
-    skip: z.coerce.number<number>().int().min(0).default(0),
-    take: z.coerce.number<number>().int().min(1).max(100).default(20),
-    searchText: z
-      .string()
-      .trim()
-      .transform((text) => text || undefined)
-      .optional(),
-    tagName: z.string().trim().min(1).max(TAG_NAME_MAX_LENGTH).optional(),
-    tagId: z.uuid().optional(),
     entryStartDate: z.iso.date().optional(),
     entryEndDate: z.iso.date().optional(),
   })
-  .refine(
-    // `YYYY-MM-DD` strings sort the same way as the dates they represent
-    ({ entryStartDate, entryEndDate }) =>
-      !entryStartDate || !entryEndDate || entryStartDate <= entryEndDate,
-    { message: 'The end date must be on or after the start date.', path: ['entryEndDate'] },
-  )
+  .refine(isValidEntryDateRange, dateRangeError)
+
+/** `GET /api/v1/entries` query string. Values arrive as strings, so numbers are coerced. */
+export const EntryListQuerySchema = EntryListDateRangeSchema.safeExtend({
+  skip: z.coerce.number<number>().int().min(0).default(0),
+  take: z.coerce.number<number>().int().min(1).max(100).default(20),
+  searchText: z
+    .string()
+    .trim()
+    .transform((text) => text || undefined)
+    .optional(),
+  tagName: z.string().trim().min(1).max(TAG_NAME_MAX_LENGTH).optional(),
+  tagId: z.uuid().optional(),
+})
 
 export type EntryListQueryInput = z.input<typeof EntryListQuerySchema>
 export type EntryListQueryOutput = z.infer<typeof EntryListQuerySchema>

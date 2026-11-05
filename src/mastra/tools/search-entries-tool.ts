@@ -3,24 +3,17 @@ import { z } from 'zod'
 import { USER_ID_KEY } from '../guardrails/requestContext'
 import { EntryService } from '@/src/server/entry/entry.service'
 import {
+  EntryListDateRangeSchema,
   EntryListSchema,
   TAG_NAME_MAX_LENGTH,
   type EntryListQueryOutput,
 } from '@/src/server/entry/schemas'
 
-export const SearchEntriesInputSchema = z
-  .object({
-    text: z.string().trim().min(1).max(500).optional(),
-    tag: z.string().trim().min(1).max(TAG_NAME_MAX_LENGTH).optional(),
-    entryStartDate: z.iso.date().optional(),
-    entryEndDate: z.iso.date().optional(),
-    limit: z.number().int().min(1).max(20).default(10),
-  })
-  .refine(
-    ({ entryStartDate, entryEndDate }) =>
-      !entryStartDate || !entryEndDate || entryStartDate <= entryEndDate,
-    { message: 'The end date must be on or after the start date.', path: ['entryEndDate'] },
-  )
+export const SearchEntriesInputSchema = EntryListDateRangeSchema.safeExtend({
+  text: z.string().trim().min(1).max(500).optional(),
+  tag: z.string().trim().min(1).max(TAG_NAME_MAX_LENGTH).optional(),
+  limit: z.number().int().min(1).max(20).default(10),
+})
 
 export const searchEntriesTool = createTool({
   id: 'search-entries',

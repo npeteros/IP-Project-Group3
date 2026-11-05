@@ -20,7 +20,7 @@ vi.mock('@/src/server/entry/entry.service', () => ({
 }))
 
 import { getEntryTool } from '@/src/mastra/tools/get-entry-tool'
-import { searchEntriesTool } from '@/src/mastra/tools/search-entries-tool'
+import { SearchEntriesInputSchema, searchEntriesTool } from '@/src/mastra/tools/search-entries-tool'
 
 const USER_ID = '3f2b1c4e-8a9d-4e7f-9b1a-2c3d4e5f6a7b'
 const ENTRY_ID = '0d1e2f3a-4b5c-4d6e-9f7a-8b9c0d1e2f3a'
@@ -32,6 +32,15 @@ beforeEach(() => {
 })
 
 describe('searchEntriesTool', () => {
+  it('reuses the entry-list date range validation', () => {
+    expect(
+      SearchEntriesInputSchema.safeParse({
+        entryStartDate: '2026-10-31',
+        entryEndDate: '2026-10-01',
+      }).success,
+    ).toBe(false)
+  })
+
   it('uses the request-context user and maps text, tag, and date filters to EntryService', async () => {
     if (!searchEntriesTool.execute) throw new Error('searchEntriesTool has no execute function.')
 

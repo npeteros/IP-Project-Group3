@@ -45,7 +45,7 @@ function setup({ updated = 1 }: { updated?: number } = {}) {
 }
 
 describe('EntryService.findManyEntries', () => {
-  it('filters by text, tag name, date range, and the owning user', async () => {
+  it('filters by text, exact normalized tag name, date range, and the owning user', async () => {
     const db = {
       $transaction: vi.fn((queries: Promise<unknown>[]) => Promise.all(queries)),
       entry: {
@@ -73,7 +73,7 @@ describe('EntryService.findManyEntries', () => {
             { title: { contains: 'work', mode: 'insensitive' } },
             { body: { contains: 'work', mode: 'insensitive' } },
           ],
-          tags: { some: { tag: { name: { contains: 'pro', mode: 'insensitive' } } } },
+          tags: { some: { tag: { normalizedName: 'pro' } } },
           entryDate: { gte: expect.any(Date), lte: expect.any(Date) },
         },
       }),

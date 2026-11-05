@@ -12,6 +12,7 @@ import {
   AiUsageProcessor,
   assertNotRateLimited,
   isAiRateLimited,
+  prepareUiStream,
 } from '@/src/mastra/guardrails/AiUsageProcessor'
 import { createUserRequestContext } from '@/src/mastra/guardrails/requestContext'
 import type { AiUsageService } from '@/src/server/ai-usage/ai-usage.service'
@@ -247,5 +248,50 @@ describe('assertNotRateLimited', () => {
 
   it('passes results without a tripwire', () => {
     expect(() => assertNotRateLimited({})).not.toThrow()
+  })
+})
+
+describe('prepareUiStream', () => {
+  it('starts forwarding after the first non-start, non-tripwire chunk', async () => {
+    let controller!: ReadableStreamDefaultController<{ type: string }>
+    const source = new ReadableStream<{ type: string }>({
+      start(streamController) {
+        controller = streamController
+        controller.enqueue({ type: 'start' })
+        controller.enqueue({ type: 'tool-input-start' })
+      },
+    })
+
+    const prepared = await prepareUiStream(source)
+    const reader = prepared.getReader()
+
+    expect(await reader.read()).toEqual({ done: false, value: { type: 'start' } })
+    expect(await reader.read()).toEqual({ done: false, value: { type: 'tool-input-start' } })
+
+    controller.close()
+    expect(await reader.read()).toEqual({ done: true, value: undefined })
+  })
+
+  it('rejects and cancels a rate-limited stream before forwarding it', async () => {
+    let cancelled = false
+    const source = new ReadableStream<{ type: string; data?: unknown }>({
+      start(controller) {
+        controller.enqueue({ type: 'start' })
+        controller.enqueue({
+          type: 'data-tripwire',
+          data: {
+            reason: 'AI rate limit exceeded.',
+            processorId: AI_USAGE_PROCESSOR_ID,
+            metadata: { code: 'TOO_MANY_REQUESTS' },
+          },
+        })
+      },
+      cancel() {
+        cancelled = true
+      },
+    })
+
+    await expect(prepareUiStream(source)).rejects.toThrow(TooManyRequestsError)
+    expect(cancelled).toBe(true)
   })
 })

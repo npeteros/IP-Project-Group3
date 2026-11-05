@@ -67,7 +67,7 @@ export class EntryService {
         tags: {
           some: {
             ...(tagId && { tagId }),
-            ...(tagName && { tag: { name: { contains: tagName, mode: 'insensitive' } } }),
+            ...(tagName && { tag: { normalizedName: normalizeTagName(tagName) } }),
           },
         },
       }),
