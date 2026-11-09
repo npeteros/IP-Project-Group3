@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from '@/src/generated/prisma/client'
 import prisma from '@/src/lib/prisma'
 import { calendarDateToDbDate, dbDateToCalendarDate, toCalendarDate } from '@/src/lib/timezone'
-import { ConflictError, NotFoundError } from '@/src/server/api/errors'
+import { ConflictError, isUniqueViolation, NotFoundError } from '@/src/server/api/errors'
 import {
   normalizeTagName,
   type Entry,
@@ -38,10 +38,6 @@ function toEntry(row: EntryRow): Entry {
 /** The day `writtenAt` falls on in the app time zone, ready for the `entryDate` column. */
 function toEntryDate(writtenAt: Date) {
   return calendarDateToDbDate(toCalendarDate(writtenAt))
-}
-
-function isUniqueViolation(error: unknown) {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002'
 }
 
 /** Entry reads and writes, scoped to one user. */

@@ -59,6 +59,11 @@ export class ConflictError extends AppError {
   }
 }
 
+/** True for a Prisma unique constraint violation (`P2002`). Duck-typed so this file stays Prisma-free. */
+export function isUniqueViolation(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002'
+}
+
 /** Over a rate limit (e.g. the per-user AI call limit). */
 export class TooManyRequestsError extends AppError {
   constructor(message = 'Too many requests. Try again later.') {

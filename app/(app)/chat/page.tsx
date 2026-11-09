@@ -1,5 +1,6 @@
 import { Icon } from '@/components/Icon'
-import { APP_NAME, CHAT_MESSAGES, CHAT_PAGE, type ChatMessage } from '@/src/lib/constants'
+import { APP_NAME, CHAT_PAGE } from '@/src/lib/constants'
+import { CHAT_MESSAGES, type ChatMessage } from '@/src/lib/placeholders/chat'
 import { typography } from '@/src/lib/typography'
 
 function MessageBubble({ message }: { message: ChatMessage }) {

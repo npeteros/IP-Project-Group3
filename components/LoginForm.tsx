@@ -63,14 +63,9 @@ export function LoginForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <label htmlFor="password" className={LABEL}>
-            {LOGIN_PAGE.passwordLabel}
-          </label>
-          <Link href="#" className="text-[13px] leading-none font-semibold">
-            {LOGIN_PAGE.forgotPasswordLabel}
-          </Link>
-        </div>
+        <label htmlFor="password" className={LABEL}>
+          {LOGIN_PAGE.passwordLabel}
+        </label>
         <div className="relative">
           <input
             id="password"
@@ -112,6 +107,17 @@ export function LoginForm() {
       >
         {LOGIN_PAGE.submitLabel}
       </button>
+
+      <div className="mt-1 flex flex-wrap justify-center gap-x-6 gap-y-3 text-[13px] leading-none font-semibold">
+        {/* No reset flow yet; placeholder until password reset is built. */}
+        <Link href="#">{LOGIN_PAGE.forgotPasswordLabel}</Link>
+        <Link
+          href={LOGIN_PAGE.createAccountHref}
+          className="text-neutral-400 hover:text-neutral-600"
+        >
+          {LOGIN_PAGE.newHereLabel} {LOGIN_PAGE.createAccountLabel}
+        </Link>
+      </div>
     </form>
   )
 }

@@ -3,8 +3,17 @@ export const typography = {
   display: 'font-serif text-[28px] leading-[1.2] font-medium lg:text-[52px] lg:leading-[1.15]',
   // Page titles ("Journal", "Frameworks", "Chat with your journal")
   pageTitle: 'font-serif text-[26px] leading-none font-semibold lg:text-[34px]',
+  // Settings sub-page titles ("General", "Data & privacy")
+  sectionTitle: 'font-serif text-[26px] leading-none font-semibold lg:text-[30px]',
+  // Uppercase group labels above cards and settings groups
+  sectionLabel:
+    'font-sans text-xs leading-none font-bold tracking-[0.06em] uppercase text-neutral-400',
+  // Card headings ("Mood mix", "Recurring themes")
+  cardHeading: 'font-sans text-[15px] leading-none font-semibold',
+  // Big numbers on stat cards
+  stat: 'font-serif text-[32px] leading-none font-extrabold',
   // Auth page headline
-  authTitle: 'font-serif text-[28px] leading-[1.2] font-medium lg:text-[32px]',
+  authTitle: 'font-serif text-[28px] leading-[1.2] font-medium lg:text-[30px]',
   // Form field labels
   fieldLabel: 'font-sans text-[13px] leading-none font-medium text-neutral-900',
   // App wordmark next to the logo

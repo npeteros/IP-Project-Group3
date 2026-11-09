@@ -9,5 +9,11 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/journal/:path*', '/frameworks/:path*', '/chat/:path*'],
+  matcher: [
+    '/journal/:path*',
+    '/frameworks/:path*',
+    '/insights/:path*',
+    '/chat/:path*',
+    '/settings/:path*',
+  ],
 }

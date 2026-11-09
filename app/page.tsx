@@ -25,8 +25,9 @@ function PreviewCards() {
   const { entry, moodMix, insight } = ONBOARDING.preview
 
   return (
-    <div className="relative mx-auto flex h-full max-w-[520px] flex-col justify-center gap-6 px-10 py-16">
-      <Card className="flex w-[340px] max-w-full flex-col gap-2 p-5 shadow-md">
+    // Positions mirror the design's 600x900 panel (e.g. left 60px / top 120px), as percentages.
+    <div className="relative h-full">
+      <Card className="absolute top-[13%] left-[10%] flex w-[340px] max-w-[80%] flex-col gap-2 p-5 shadow-md">
         <span className={typography.caption}>{entry.date}</span>
         <h3 className={typography.entryTitle}>{entry.title}</h3>
         <p className={typography.bodySmall}>{entry.excerpt}</p>
@@ -35,7 +36,7 @@ function PreviewCards() {
         </div>
       </Card>
 
-      <Card className="flex w-[300px] max-w-full flex-col gap-2.5 self-end p-5 shadow-md">
+      <Card className="absolute top-[38%] right-[11.5%] flex w-[300px] max-w-[80%] flex-col gap-2.5 p-5 shadow-md">
         <span className="text-[13px] leading-none font-semibold">{moodMix.title}</span>
         <div className="flex flex-wrap gap-2">
           {moodMix.moods.map((mood) => (
@@ -52,7 +53,7 @@ function PreviewCards() {
         </div>
       </Card>
 
-      <Card className="ml-14 flex w-[220px] max-w-full items-center gap-3 p-4 shadow-md">
+      <Card className="absolute bottom-[10%] left-[20%] flex w-[220px] max-w-[80%] items-center gap-3 p-4 shadow-md">
         <span className="flex size-[34px] flex-none items-center justify-center rounded-full bg-neutral-900 text-surface">
           <Icon name="cloud" size={15} strokeWidth={2.2} />
         </span>
@@ -78,7 +79,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Copy & actions */}
-      <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col gap-5 px-7 pt-8 pb-7 lg:mx-0 lg:max-w-[640px] lg:justify-center lg:gap-8 lg:px-20 lg:py-14 xl:ml-auto">
+      <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col gap-5 px-7 pt-8 pb-7 lg:max-w-[640px] lg:justify-center lg:gap-8 lg:px-20 lg:py-14">
         <div className="hidden lg:block">
           <Logo size="lg" />
         </div>
@@ -88,9 +89,12 @@ export default function OnboardingPage() {
           <p className={`${typography.lead} lg:max-w-[480px]`}>{ONBOARDING.description}</p>
         </div>
 
-        <ul className="mt-1 flex flex-col gap-3 lg:gap-3.5">
+        <ul className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-3 lg:gap-x-3.5 lg:gap-y-3.5">
           {ONBOARDING.badges.map((badge) => (
-            <li key={badge.label} className="flex items-start gap-3 lg:gap-3.5">
+            <li
+              key={badge.label}
+              className="col-span-2 grid grid-cols-subgrid items-start justify-items-start"
+            >
               <ToneBadge label={badge.label} tone={badge.tone} />
               <span className="pt-1 text-[13px] leading-[1.5] text-neutral-600 lg:pt-[5px] lg:text-sm">
                 {badge.description}
@@ -105,14 +109,14 @@ export default function OnboardingPage() {
 
         <div className="flex flex-col gap-5 lg:mt-3 lg:flex-row lg:items-center">
           <Link
-            href="/journal"
+            href={ONBOARDING.getStartedHref}
             className="flex h-[52px] items-center justify-center rounded-[14px] bg-neutral-900 px-[30px] text-[15px] leading-none font-semibold text-surface shadow-md hover:text-surface"
           >
             <span className="lg:hidden">{ONBOARDING.primaryCta}</span>
             <span className="hidden lg:inline">{ONBOARDING.primaryCtaDesktop}</span>
           </Link>
           <Link
-            href="/journal"
+            href={ONBOARDING.getStartedHref}
             className="text-center text-[13px] leading-none font-semibold text-neutral-400 lg:hidden"
           >
             {ONBOARDING.skipLabel}

@@ -29,3 +29,20 @@ export function calendarDateToDbDate(calendarDate: string): Date {
 export function dbDateToCalendarDate(dbDate: Date): string {
   return dbDate.toISOString().slice(0, 10)
 }
+
+const monthDayFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: APP_TIME_ZONE,
+  month: 'short',
+  day: 'numeric',
+})
+
+const timeFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: APP_TIME_ZONE,
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+/** Editor header label for an instant written today, e.g. `Today, Aug 25 · 8:14 AM` (Manila). */
+export function formatTodayTimestamp(date: Date): string {
+  return `Today, ${monthDayFormat.format(date)} · ${timeFormat.format(date)}`
+}
