@@ -45,6 +45,45 @@ describe('openApiDocument', () => {
   })
 })
 
+describe('tag paths', () => {
+  const paths = openApiDocument.paths ?? {}
+
+  it('documents list, rename and delete', () => {
+    expect(paths['/tags']?.get?.operationId).toBe('listTags')
+    expect(paths['/tags/{id}']?.patch?.operationId).toBe('renameTag')
+    expect(paths['/tags/{id}']?.delete?.operationId).toBe('deleteTag')
+  })
+
+  it('documents the expected status codes', () => {
+    expect(Object.keys(paths['/tags']?.get?.responses ?? {})).toEqual(['200', '401'])
+    expect(Object.keys(paths['/tags/{id}']?.patch?.responses ?? {})).toEqual([
+      '200',
+      '400',
+      '401',
+      '404',
+      '409',
+    ])
+    expect(Object.keys(paths['/tags/{id}']?.delete?.responses ?? {})).toEqual([
+      '204',
+      '400',
+      '401',
+      '404',
+    ])
+  })
+
+  it('takes the id as a uuid path param', () => {
+    expect(paths['/tags/{id}']?.patch?.parameters).toEqual([
+      expect.objectContaining({ in: 'path', name: 'id', required: true }),
+    ])
+  })
+
+  it('registers the Tag and TagList schemas', () => {
+    expect(Object.keys(openApiDocument.components?.schemas ?? {})).toEqual(
+      expect.arrayContaining(['Tag', 'TagList', 'ApiError']),
+    )
+  })
+})
+
 describe('ApiErrorSchema', () => {
   afterEach(() => {
     vi.restoreAllMocks()
