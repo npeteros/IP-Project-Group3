@@ -4,14 +4,12 @@ import { ConflictError, isUniqueViolation, NotFoundError } from '@/src/server/ap
 import { normalizeTagName } from '@/src/server/entry/schemas'
 import type { TagList, TagRenameOutput, TagRenameResponse } from '@/src/server/tag/schemas'
 
-/** Tag reads and management, scoped to one user. */
 export class TagService {
   constructor(
     private readonly userId: string,
     private readonly db: PrismaClient = prisma,
   ) {}
 
-  /** The user's tags by name, each with a count of its live (not soft-deleted) entries. */
   async findManyTags(): Promise<TagList> {
     const rows = await this.db.tag.findMany({
       where: { userId: this.userId },
@@ -29,10 +27,7 @@ export class TagService {
     }
   }
 
-  /**
-   * Renames a tag. Changing only the case of its own name is allowed, since the
-   * unique key (`normalizedName`) stays the same; clashing with another tag is a 409.
-   */
+  /** Changing only the case of a tag's own name is allowed: its `normalizedName` is unchanged. */
   async renameTag(id: string, input: TagRenameOutput): Promise<TagRenameResponse> {
     try {
       // The ownership filter lives in the write itself, so there's no check-then-write race

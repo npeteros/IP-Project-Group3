@@ -41,7 +41,6 @@ const body = z.string().trim().min(1, 'Write something before saving.')
 /** The entry's calendar day is derived from this in `APP_TIME_ZONE`, so clients send no time zone. */
 const writtenAt = z.iso.datetime({ offset: true, error: 'Enter a valid date and time.' })
 
-/** A single tag name. Shared with `src/server/tag/schemas.ts` for rename. */
 export const tagName = z
   .string()
   .trim()

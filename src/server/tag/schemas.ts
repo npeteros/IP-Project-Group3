@@ -4,9 +4,6 @@ import { EntryTagSchema, tagName } from '@/src/server/entry/schemas'
 // Shared by the API routes, the client hooks and the OpenAPI spec.
 // Keep this file free of server-only imports (Prisma, `next/headers`, `auth`).
 
-// --- Requests ---------------------------------------------------------------
-
-/** `:id` path param for `PATCH` and `DELETE /api/v1/tags/:id` */
 export const TagIdSchema = z.object({
   id: z.uuid(),
 })
@@ -21,8 +18,6 @@ export const TagRenameSchema = z.object({
 
 export type TagRenameInput = z.input<typeof TagRenameSchema>
 export type TagRenameOutput = z.infer<typeof TagRenameSchema>
-
-// --- Responses --------------------------------------------------------------
 
 export const TagSchema = z
   .object({
@@ -42,7 +37,6 @@ export const TagListSchema = z
   })
   .meta({ id: 'TagList' })
 
-/** `PATCH /api/v1/tags/:id` response: the same `{ id, name }` shape entries embed. */
 export const TagRenameResponseSchema = EntryTagSchema
 
 export type Tag = z.infer<typeof TagSchema>
