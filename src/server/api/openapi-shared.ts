@@ -31,5 +31,6 @@ export const errorResponses = {
   403: errorResponse('Forbidden', 'Signed in but not allowed.'),
   404: errorResponse('NotFound', "Missing, soft-deleted or another user's record."),
   409: errorResponse('Conflict', 'Clashes with an existing record.'),
+  429: errorResponse('TooManyRequests', 'The signed-in user has exceeded the AI call rate limit.'),
   500: errorResponse('InternalError', 'Unexpected server error.'),
 }

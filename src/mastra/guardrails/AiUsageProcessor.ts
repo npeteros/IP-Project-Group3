@@ -24,6 +24,65 @@ export type TripwireInfo = {
   metadata?: unknown
 }
 
+type StreamChunk = { type: string }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+export function getTripwireInfo(chunk: unknown): TripwireInfo | undefined {
+  if (!isRecord(chunk) || chunk.type !== 'data-tripwire' || !isRecord(chunk.data)) {
+    return undefined
+  }
+
+  const { data } = chunk
+  return {
+    reason: typeof data.reason === 'string' ? data.reason : undefined,
+    processorId: typeof data.processorId === 'string' ? data.processorId : undefined,
+    metadata: data.metadata,
+  }
+}
+
+export async function prepareUiStream<T extends StreamChunk>(
+  stream: ReadableStream<T>,
+): Promise<ReadableStream<T>> {
+  const reader = stream.getReader()
+  const bufferedChunks: T[] = []
+  let reachedFirstContent = false
+
+  while (!reachedFirstContent) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    bufferedChunks.push(value)
+    const tripwire = getTripwireInfo(value)
+    if (isAiRateLimited(tripwire)) {
+      await reader.cancel()
+      throw new TooManyRequestsError(tripwire?.reason ?? 'AI rate limit exceeded.')
+    }
+
+    reachedFirstContent = value.type !== 'start' && value.type !== 'data-tripwire'
+  }
+
+  let bufferedIndex = 0
+  return new ReadableStream<T>({
+    async pull(controller) {
+      if (bufferedIndex < bufferedChunks.length) {
+        controller.enqueue(bufferedChunks[bufferedIndex])
+        bufferedIndex += 1
+        return
+      }
+
+      const { done, value } = await reader.read()
+      if (done) controller.close()
+      else controller.enqueue(value)
+    },
+    cancel(reason) {
+      return reader.cancel(reason)
+    },
+  })
+}
+
 /** Per-request bookkeeping kept in processor state; a class so reads can narrow with instanceof. */
 class UsageRun {
   inputTokens = 0

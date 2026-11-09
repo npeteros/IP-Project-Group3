@@ -46,6 +46,6 @@ next-env.d.ts
 
 /src/generated/prisma
 
-# mastra local storage
+# local mastra storage (libsql + duckdb observability)
 /mastra.db*
 /mastra.duckdb*

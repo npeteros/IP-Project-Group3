@@ -123,7 +123,7 @@ Create `tools/<name>-tool.ts` with `createTool` from `@mastra/core/tools`. The s
 ## Workflows
 
 Build workflows with `createStep` / `createWorkflow`, chain steps with `.then()`, and call
-`.commit()`. `workflows/weather-workflow.ts` is the reference.
+`.commit()`. Follow the installed Mastra documentation for current workflow patterns.
 
 - **Forward `requestContext` into every agent call inside a step**
   (`agent.stream(messages, { requestContext })`), otherwise the call is logged as a system call.
