@@ -46,3 +46,35 @@ const timeFormat = new Intl.DateTimeFormat('en-US', {
 export function formatTodayTimestamp(date: Date): string {
   return `Today, ${monthDayFormat.format(date)} · ${timeFormat.format(date)}`
 }
+
+const weekdayMonthDayFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: APP_TIME_ZONE,
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+})
+
+const weekdayMonthDayYearFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: APP_TIME_ZONE,
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+})
+
+/**
+ * Editor header label for the instant an entry was written (Manila). Entries from today read
+ * `Today, Aug 25 · 8:14 AM`, earlier ones `Mon, Aug 24 · 8:14 AM`, and ones from a previous year
+ * add the year. `now` is injectable so callers (and tests) control what "today" means.
+ */
+export function formatEntryTimestamp(writtenAt: Date, now: Date = new Date()): string {
+  const time = timeFormat.format(writtenAt)
+  const writtenDay = toCalendarDate(writtenAt)
+  const today = toCalendarDate(now)
+
+  if (writtenDay === today) return `Today, ${monthDayFormat.format(writtenAt)} · ${time}`
+
+  const sameYear = writtenDay.slice(0, 4) === today.slice(0, 4)
+  const date = (sameYear ? weekdayMonthDayFormat : weekdayMonthDayYearFormat).format(writtenAt)
+  return `${date} · ${time}`
+}

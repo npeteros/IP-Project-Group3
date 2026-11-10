@@ -1,20 +1,21 @@
 'use client'
 
+import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { useForm, useWatch, type Resolver } from 'react-hook-form'
+import type { z } from 'zod'
+import { EMPTY_ENTRY_FORM, type EntryFormValues } from '@/src/lib/entry-form'
 import type { EntryAnalysis } from '@/src/lib/placeholders/editor'
+import { typography } from '@/src/lib/typography'
+import { useUnsavedChangesWarning } from '@/src/lib/use-unsaved-changes-warning'
 import {
   normalizeTagName,
-  TAG_NAME_MAX_LENGTH,
-  TAGS_PER_ENTRY_MAX,
+  type EntryCreateSchema,
+  type EntryUpdateSchema,
 } from '@/src/server/entry/schemas'
-import { typography } from '@/src/lib/typography'
 import { Icon } from './Icon'
 import { SectionLabel } from './ui'
-
-type Draft = { title: string; body: string; tags: string[] }
-
-const EMPTY_DRAFT: Draft = { title: '', body: '', tags: [] }
 
 function hasTag(tags: string[], name: string) {
   const key = normalizeTagName(name)
@@ -29,10 +30,29 @@ function MoodChip({ mood }: { mood: string }) {
   )
 }
 
-function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+function TagEditor({
+  tags,
+  onChange,
+  suggestions = [],
+  disabled = false,
+  errorId,
+  invalid = false,
+}: {
+  tags: string[]
+  onChange: (tags: string[]) => void
+  /** Existing tag names offered while typing. */
+  suggestions?: string[]
+  disabled?: boolean
+  errorId?: string
+  invalid?: boolean
+}) {
   const [adding, setAdding] = useState(false)
   const [value, setValue] = useState('')
+  const listId = useId()
+  const offered = suggestions.filter((name) => !hasTag(tags, name))
 
+  // The schema is the only place tag limits live, so a too-long name or a 21st tag is added here
+  // and the form's inline error says why it can't be saved.
   function commit() {
     const name = value.trim()
     if (name && !hasTag(tags, name)) onChange([...tags, name])
@@ -45,29 +65,32 @@ function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string
       {tags.map((tag) => (
         <li
           key={tag}
-          className="group flex items-center gap-1 rounded-full bg-neutral-100 py-[7px] pr-2 pl-3.5 text-[13px] leading-none font-medium text-neutral-600"
+          className="group flex max-w-full items-center gap-1 rounded-full bg-neutral-100 py-[7px] pr-2 pl-3.5 text-[13px] leading-none font-medium break-all text-neutral-600"
         >
           {tag}
           <button
             type="button"
             aria-label={`Remove tag ${tag}`}
+            disabled={disabled}
             onClick={() => onChange(tags.filter((t) => t !== tag))}
-            className="rounded-full p-0.5 text-neutral-400 hover:text-neutral-900"
+            className="rounded-full p-0.5 text-neutral-400 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Icon name="close" size={12} strokeWidth={2.4} />
           </button>
         </li>
       ))}
-      {tags.length < TAGS_PER_ENTRY_MAX && (
-        <li>
-          {adding ? (
+      <li>
+        {adding ? (
+          <>
             <input
               // Focus the field the moment the user asks to add a tag.
               // oxlint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               aria-label="New tag"
+              aria-invalid={invalid}
+              aria-describedby={errorId}
+              list={offered.length > 0 ? listId : undefined}
               value={value}
-              maxLength={TAG_NAME_MAX_LENGTH}
               onChange={(event) => setValue(event.target.value)}
               onBlur={commit}
               onKeyDown={(event) => {
@@ -82,18 +105,26 @@ function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string
               }}
               className="h-[29px] w-36 rounded-full border border-neutral-400 bg-surface px-3.5 text-[13px] text-neutral-900 outline-none"
             />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setAdding(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-3.5 py-[7px] text-[13px] leading-none font-semibold text-neutral-600 hover:text-neutral-900"
-            >
-              <Icon name="plus" size={13} strokeWidth={2.4} />
-              Add tag
-            </button>
-          )}
-        </li>
-      )}
+            <datalist id={listId}>
+              {offered.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </datalist>
+          </>
+        ) : (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setAdding(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-3.5 py-[7px] text-[13px] leading-none font-semibold text-neutral-600 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Icon name="plus" size={13} strokeWidth={2.4} />
+            Add tag
+          </button>
+        )}
+      </li>
     </ul>
   )
 }
@@ -200,38 +231,112 @@ function AnalysisPanel({
   )
 }
 
-/**
- * Entry editor with the "For this entry" AI panel. Placeholder only: Save isn't wired to the
- * entries API yet, so edits stay in local state.
- */
-export function EntryEditor({
-  dateLabel,
-  initial = EMPTY_DRAFT,
-  analysis,
-}: {
+type EntrySchema = typeof EntryCreateSchema | typeof EntryUpdateSchema
+
+type EntryEditorProps<S extends EntrySchema> = {
+  /** `EntryCreateSchema` for a new entry, `EntryUpdateSchema` for an existing one. */
+  schema: S
   dateLabel: string
-  initial?: Draft
+  initial?: EntryFormValues
   /** AI tagging, summary and companion prompt. Absent for a brand-new entry. */
   analysis?: EntryAnalysis
-}) {
-  const [draft, setDraft] = useState(initial)
-  const [showCompanion, setShowCompanion] = useState(Boolean(analysis?.companionPrompt))
-  const [status, setStatus] = useState<string | null>(null)
+  /** Existing tag names offered while typing a tag. */
+  tagSuggestions?: string[]
+  /**
+   * Called with the values the schema parsed. Resolve with the saved values to reset the form to
+   * them (so it stops counting as unsaved). A rejection is swallowed here: report it via `error`.
+   */
+  onSave: (values: z.output<S>) => Promise<EntryFormValues | void>
+  /** Shows a Delete button, behind a confirmation, when given. */
+  onDelete?: () => void
+  isSaving?: boolean
+  isDeleting?: boolean
+  /** The last save or delete failure, shown above the entry. */
+  error?: string | null
+}
 
-  const update = (patch: Partial<Draft>) => {
-    setStatus(null)
-    setDraft((current) => ({ ...current, ...patch }))
-  }
+/** The first message on a tags error, which is either the list's own or one tag's. */
+function tagsErrorMessage(error: unknown): string | undefined {
+  const { message } = (error ?? {}) as { message?: string }
+  if (message) return message
+  return Array.from((error ?? []) as ArrayLike<{ message?: string } | undefined>).find(
+    (item) => item?.message,
+  )?.message
+}
+
+const ERROR_TEXT = 'text-xs leading-[1.4] font-medium text-amber-700'
+
+/**
+ * Entry editor with the "For this entry" AI panel. A react-hook-form form validated by the
+ * shared entry schema it's given, so every message shown inline comes from `schemas.ts`. It owns
+ * the form state and knows nothing about the API: callers do the saving through `onSave` and
+ * `onDelete`.
+ */
+export function EntryEditor<S extends EntrySchema>({
+  schema,
+  dateLabel,
+  initial = EMPTY_ENTRY_FORM,
+  analysis,
+  tagSuggestions,
+  onSave,
+  onDelete,
+  isSaving = false,
+  isDeleting = false,
+  error = null,
+}: EntryEditorProps<S>) {
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    getValues,
+    setFocus,
+    formState: { errors, isDirty },
+  } = useForm<EntryFormValues, unknown, z.output<S>>({
+    // Both entry schemas accept `EntryFormValues` but type their input differently (the update
+    // fields are optional), so the resolver is narrowed to the form's own shape here.
+    resolver: zodResolver(schema) as unknown as Resolver<EntryFormValues, unknown, z.output<S>>,
+    defaultValues: initial,
+  })
+  const tags = useWatch({ control, name: 'tags' })
+  const [showCompanion, setShowCompanion] = useState(Boolean(analysis?.companionPrompt))
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const keepEntryRef = useRef<HTMLButtonElement>(null)
+  const busy = isSaving || isDeleting
+  const tagsError = tagsErrorMessage(errors.tags)
+
+  useUnsavedChangesWarning(isDirty && !isDeleting)
+
+  // Put focus on the safe choice when the confirmation appears
+  useEffect(() => {
+    if (confirmingDelete) keepEntryRef.current?.focus()
+  }, [confirmingDelete])
+
+  const submit = handleSubmit(async (values) => {
+    try {
+      const saved = await onSave(values)
+      if (saved) reset(saved)
+    } catch {
+      // The caller reports the failure through `error`; the form keeps the user's edits
+    }
+  })
+
+  const setTags = (next: string[]) =>
+    setValue('tags', next, { shouldDirty: true, shouldValidate: true })
 
   function addCompanionPrompt() {
     if (!analysis) return
-    const separator = draft.body.trim() ? '\n\n' : ''
-    update({ body: `${draft.body.trimEnd()}${separator}${analysis.companionPrompt}\n` })
+    const body = getValues('body')
+    const separator = body.trim() ? '\n\n' : ''
+    setValue('body', `${body.trimEnd()}${separator}${analysis.companionPrompt}\n`, {
+      shouldDirty: true,
+    })
     setShowCompanion(false)
   }
 
   return (
-    <div className="flex min-h-full flex-col">
+    <form onSubmit={submit} noValidate className="flex min-h-full flex-col">
       <header className="flex h-16 flex-none items-center gap-4 px-5 lg:h-auto lg:px-14 lg:pt-8">
         <span className={`${typography.caption} hidden text-[13px] lg:mr-auto lg:block`}>
           {dateLabel}
@@ -242,22 +347,68 @@ export function EntryEditor({
         >
           Cancel
         </Link>
+        {onDelete && !confirmingDelete && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirmingDelete(true)}
+            className="text-[15px] leading-none font-medium text-amber-700 hover:text-amber-700/80 disabled:cursor-not-allowed disabled:opacity-60 lg:text-sm"
+          >
+            Delete
+          </button>
+        )}
         <button
-          type="button"
-          onClick={() =>
-            setStatus('Saving isn’t connected yet — this editor uses placeholder data.')
-          }
-          className="text-[15px] leading-none font-bold text-neutral-900 lg:rounded-[11px] lg:bg-neutral-900 lg:px-[22px] lg:py-2.5 lg:text-sm lg:font-semibold lg:text-surface lg:hover:bg-neutral-900/90"
+          type="submit"
+          disabled={busy}
+          aria-busy={isSaving}
+          className="text-[15px] leading-none font-bold text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60 lg:rounded-[11px] lg:bg-neutral-900 lg:px-[22px] lg:py-2.5 lg:text-sm lg:font-semibold lg:text-surface lg:hover:bg-neutral-900/90"
         >
-          <span className="lg:hidden">Done</span>
-          <span className="hidden lg:inline">Save</span>
+          {isSaving ? (
+            'Saving…'
+          ) : (
+            <>
+              <span className="lg:hidden">Done</span>
+              <span className="hidden lg:inline">Save</span>
+            </>
+          )}
         </button>
       </header>
 
-      {status && (
-        <output className="block mx-5 rounded-[10px] bg-amber-100 px-3.5 py-2.5 text-[13px] leading-[1.4] font-medium text-amber-700 lg:mx-14 lg:mt-4">
-          {status}
-        </output>
+      {onDelete && confirmingDelete && (
+        <section
+          aria-label="Confirm delete"
+          className="mx-5 flex flex-wrap items-center gap-2.5 rounded-[10px] border border-amber-500 px-3.5 py-2.5 lg:mx-14 lg:mt-4"
+        >
+          <span className="text-[13px] font-medium">
+            Delete this entry? It will be removed from your journal.
+          </span>
+          <button
+            type="button"
+            disabled={isDeleting}
+            onClick={onDelete}
+            className="h-9 rounded-[10px] bg-amber-700 px-4 text-[13px] leading-none font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isDeleting ? 'Deleting…' : 'Yes, delete'}
+          </button>
+          <button
+            ref={keepEntryRef}
+            type="button"
+            disabled={isDeleting}
+            onClick={() => setConfirmingDelete(false)}
+            className="h-9 rounded-[10px] px-3 text-[13px] leading-none font-semibold text-neutral-600 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Keep entry
+          </button>
+        </section>
+      )}
+
+      {error && (
+        <div
+          role="alert"
+          className="mx-5 block rounded-[10px] bg-amber-100 px-3.5 py-2.5 text-[13px] leading-[1.4] font-medium text-amber-700 lg:mx-14 lg:mt-4"
+        >
+          {error}
+        </div>
       )}
 
       <div className="flex flex-1 flex-col gap-8 px-6 pt-2 pb-24 lg:flex-row lg:gap-12 lg:px-14 lg:pt-6 lg:pb-12">
@@ -270,21 +421,49 @@ export function EntryEditor({
           <input
             aria-label="Title"
             placeholder="Untitled"
-            value={draft.title}
-            onChange={(event) => update({ title: event.target.value })}
+            readOnly={busy}
+            {...register('title')}
+            onKeyDown={(event) => {
+              // Enter moves on to the entry instead of submitting the form
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                setFocus('body')
+              }
+            }}
             className="w-full bg-transparent font-serif text-[22px] leading-[1.3] font-medium outline-none placeholder:text-neutral-300 lg:text-[30px]"
           />
 
-          <textarea
-            aria-label="Entry"
-            placeholder="How are you feeling today?"
-            value={draft.body}
-            onChange={(event) => update({ body: event.target.value })}
-            className="min-h-[96px] w-full resize-none bg-transparent text-[15px] leading-[1.7] outline-none [field-sizing:content] placeholder:text-neutral-400 lg:min-h-[120px] lg:text-[17px] lg:leading-[1.8]"
-          />
+          <div className="flex flex-col gap-2">
+            <textarea
+              aria-label="Entry"
+              placeholder="How are you feeling today?"
+              readOnly={busy}
+              aria-invalid={Boolean(errors.body)}
+              aria-describedby={errors.body ? 'entry-body-error' : undefined}
+              {...register('body')}
+              className="min-h-[96px] w-full resize-none bg-transparent text-[15px] leading-[1.7] outline-none [field-sizing:content] placeholder:text-neutral-400 lg:min-h-[120px] lg:text-[17px] lg:leading-[1.8]"
+            />
+            {errors.body && (
+              <p id="entry-body-error" role="alert" className={ERROR_TEXT}>
+                {errors.body.message}
+              </p>
+            )}
+          </div>
 
-          <div className="lg:mt-1.5">
-            <TagEditor tags={draft.tags} onChange={(tags) => update({ tags })} />
+          <div className="flex flex-col gap-2 lg:mt-1.5">
+            <TagEditor
+              tags={tags}
+              onChange={setTags}
+              suggestions={tagSuggestions}
+              disabled={busy}
+              invalid={Boolean(tagsError)}
+              errorId={tagsError ? 'entry-tags-error' : undefined}
+            />
+            {tagsError && (
+              <p id="entry-tags-error" role="alert" className={ERROR_TEXT}>
+                {tagsError}
+              </p>
+            )}
           </div>
         </div>
 
@@ -296,8 +475,8 @@ export function EntryEditor({
           {analysis ? (
             <AnalysisPanel
               analysis={analysis}
-              tags={draft.tags}
-              onAddTag={(tag) => update({ tags: [...draft.tags, tag] })}
+              tags={tags}
+              onAddTag={(tag) => setTags([...tags, tag])}
             />
           ) : (
             <p className="rounded-[14px] border border-dashed border-neutral-200 p-4 text-[13px] leading-normal text-neutral-600">
@@ -314,6 +493,6 @@ export function EntryEditor({
           )}
         </aside>
       </div>
-    </div>
+    </form>
   )
 }

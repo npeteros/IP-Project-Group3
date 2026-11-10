@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { EntryEditor } from '@/components/EntryEditor'
+import { NewEntryEditor } from '@/components/NewEntryEditor'
 import { APP_NAME, NEW_ENTRY_LABEL } from '@/src/lib/constants'
 import { formatTodayTimestamp } from '@/src/lib/timezone'
 
@@ -13,5 +13,5 @@ function nowLabel() {
 }
 
 export default function NewEntryPage() {
-  return <EntryEditor dateLabel={nowLabel()} />
+  return <NewEntryEditor dateLabel={nowLabel()} />
 }
