@@ -5,7 +5,8 @@ import { SEARCH_PLACEHOLDER } from '@/src/lib/constants'
 import type { JournalEntry } from '@/src/lib/placeholders/journal'
 import { typography } from '@/src/lib/typography'
 import { Icon } from './Icon'
-import { EntryCard, FilterChip, StreakBadge } from './ui'
+import { StreakBadge } from './StreakBadge'
+import { EntryCard, FilterChip } from './ui'
 
 const ALL = 'All'
 

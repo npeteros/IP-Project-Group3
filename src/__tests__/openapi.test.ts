@@ -150,3 +150,16 @@ describe('GET /api/v1/openapi.json', () => {
     expect(GET().status).toBe(404)
   })
 })
+
+describe('stats paths', () => {
+  const paths = openApiDocument.paths ?? {}
+
+  it('documents GET /stats with 200 and 401', () => {
+    expect(paths['/stats']?.get?.operationId).toBe('getStats')
+    expect(Object.keys(paths['/stats']?.get?.responses ?? {})).toEqual(['200', '401'])
+  })
+
+  it('registers the Stats schema', () => {
+    expect(Object.keys(openApiDocument.components?.schemas ?? {})).toContain('Stats')
+  })
+})

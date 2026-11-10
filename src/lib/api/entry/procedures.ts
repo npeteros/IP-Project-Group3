@@ -19,15 +19,15 @@ export const entry = {
   ),
   create: defineMutation(
     (input: EntryCreateInput) => request<Entry>(ENTRIES, { method: 'POST', body: input }),
-    { invalidates: [['entry']] },
+    { invalidates: [['entry'], ['stats']] },
   ),
   update: defineMutation(
     ({ id, ...input }: EntryIdInput & EntryUpdateInput) =>
       request<Entry>(`${ENTRIES}/${id}`, { method: 'PATCH', body: input }),
-    { invalidates: [['entry']] },
+    { invalidates: [['entry'], ['stats']] },
   ),
   delete: defineMutation(
     ({ id }: EntryIdInput) => request<void>(`${ENTRIES}/${id}`, { method: 'DELETE' }),
-    { invalidates: [['entry']] },
+    { invalidates: [['entry'], ['stats']] },
   ),
 }

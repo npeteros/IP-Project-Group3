@@ -170,3 +170,44 @@ describe('api.entry', () => {
     expect(fetchMock.mock.calls[0][1]?.body).toBe('{"title":"New"}')
   })
 })
+
+describe('api.stats', () => {
+  it('get calls GET /api/v1/stats under the stats key', async () => {
+    respond(200, { currentStreak: 2, lastEntryDate: '2026-06-10' })
+
+    await expect(api.stats.get.fetch()).resolves.toEqual({
+      currentStreak: 2,
+      lastEntryDate: '2026-06-10',
+    })
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/stats')
+    expect(api.stats.get.queryKey()).toEqual(['stats', 'get', undefined])
+  })
+
+  const entryId = '0b7c2c1e-5f1a-4a39-9d43-3c2f4f6c8e11'
+
+  async function mutateWith<T>(
+    useHook: () => { mutateAsync: (input: T) => Promise<unknown> },
+    input: T,
+  ) {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(api.stats.get.queryKey(), { currentStreak: 0, lastEntryDate: null })
+    respond(200, {})
+
+    const { result } = renderHook(useHook, { wrapper: wrapper(queryClient) })
+    await act(() => result.current.mutateAsync(input))
+
+    return queryClient.getQueryState(api.stats.get.queryKey())?.isInvalidated
+  }
+
+  it('entry create, update and delete invalidate stats', async () => {
+    await expect(mutateWith(() => api.entry.create.useMutation(), { body: 'Hi' })).resolves.toBe(
+      true,
+    )
+    await expect(
+      mutateWith(() => api.entry.update.useMutation(), { id: entryId, title: 'New' }),
+    ).resolves.toBe(true)
+    await expect(mutateWith(() => api.entry.delete.useMutation(), { id: entryId })).resolves.toBe(
+      true,
+    )
+  })
+})
