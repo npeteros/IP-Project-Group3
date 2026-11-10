@@ -12,6 +12,9 @@ function record(overrides: Record<string, unknown> = {}) {
     userId: 'u1',
     title: null,
     body: 'hello',
+    mood: null,
+    summary: null,
+    frameworkId: null,
     writtenAt: now,
     entryDate: now,
     createdAt: now,
@@ -28,6 +31,9 @@ function setup({ updated = 1 }: { updated?: number } = {}) {
       create: vi.fn().mockResolvedValue({ id: 'e1' }),
       updateMany: vi.fn().mockResolvedValue({ count: updated }),
       findFirst: vi.fn().mockResolvedValue(record()),
+    },
+    framework: {
+      findFirst: vi.fn().mockResolvedValue({ id: 'f1' }),
     },
     tag: {
       upsert: vi
@@ -106,6 +112,41 @@ describe('EntryService.createEntry', () => {
     expect(tx.entry.create.mock.calls[0][0].data.userId).toBe('u1')
   })
 
+  it('stores the optional framework reference', async () => {
+    const { tx, service } = setup()
+    await service.createEntry({
+      body: 'hi',
+      tags: [],
+      frameworkId: '00000000-0000-4000-8000-000000000001',
+    })
+
+    expect(tx.entry.create.mock.calls[0][0].data.frameworkId).toBe(
+      '00000000-0000-4000-8000-000000000001',
+    )
+    expect(tx.framework.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: '00000000-0000-4000-8000-000000000001',
+        deletedAt: null,
+        OR: [{ userId: null }, { userId: 'u1' }],
+      },
+      select: { id: true },
+    })
+  })
+
+  it('rejects a framework that is missing, deleted, or belongs to another user', async () => {
+    const { tx, service } = setup()
+    tx.framework.findFirst.mockResolvedValue(null)
+
+    await expect(
+      service.createEntry({
+        body: 'hi',
+        tags: [],
+        frameworkId: '00000000-0000-4000-8000-000000000001',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundError)
+    expect(tx.entry.create).not.toHaveBeenCalled()
+  })
+
   it('de-duplicates tags case-insensitively and scopes them to the user', async () => {
     const { tx, service } = setup()
     await service.createEntry({ body: 'hi', tags: ['Work', 'work', '  WORK ', 'Home', ' '] })
@@ -132,6 +173,9 @@ describe('EntryService.createEntry', () => {
       id: 'e1',
       title: null,
       body: 'hello',
+      mood: null,
+      summary: null,
+      frameworkId: null,
       writtenAt: '2026-10-30T00:00:00.000Z',
       entryDate: '2026-10-30',
       createdAt: '2026-10-30T00:00:00.000Z',

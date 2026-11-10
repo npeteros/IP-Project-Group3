@@ -5,7 +5,10 @@ import {
   EntryListQuerySchema,
   EntryListSchema,
   EntrySchema,
+  EntryAnalysisSchema,
   EntryUpdateSchema,
+  MoodSchema,
+  ENTRY_SUMMARY_MAX_LENGTH,
   TAG_NAME_MAX_LENGTH,
   TAGS_PER_ENTRY_MAX,
 } from '@/src/server/entry/schemas'
@@ -44,6 +47,15 @@ describe('EntryCreateSchema', () => {
 
   it('defaults tags to an empty list', () => {
     expect(EntryCreateSchema.parse({ body: 'Hello' })).toEqual({ body: 'Hello', tags: [] })
+  })
+
+  it('accepts an optional framework uuid', () => {
+    expect(EntryCreateSchema.parse({ body: 'Hello', frameworkId: uuid })).toMatchObject({
+      frameworkId: uuid,
+    })
+    expect(
+      EntryCreateSchema.safeParse({ body: 'Hello', frameworkId: 'daily-review' }).success,
+    ).toBe(false)
   })
 
   it('drops a client-sent time zone: dates are always derived in Manila time', () => {
@@ -199,6 +211,9 @@ describe('EntrySchema / EntryListSchema', () => {
     id: uuid,
     title: null,
     body: 'Hello',
+    mood: null,
+    summary: null,
+    frameworkId: null,
     writtenAt: '2026-08-25T00:14:00.000Z',
     entryDate: '2026-08-25',
     createdAt: '2026-08-25T00:14:00.000Z',
@@ -218,6 +233,61 @@ describe('EntrySchema / EntryListSchema', () => {
     expect(EntryListSchema.parse({ entries: [entry], total: 1 })).toEqual({
       entries: [entry],
       total: 1,
+    })
+  })
+
+  describe('MoodSchema / EntryAnalysisSchema', () => {
+    it.each([
+      'CALM',
+      'GRATEFUL',
+      'HAPPY',
+      'HOPEFUL',
+      'NEUTRAL',
+      'ANXIOUS',
+      'STRESSED',
+      'SAD',
+      'FRUSTRATED',
+    ])('accepts the %s mood', (mood) => {
+      expect(MoodSchema.parse(mood)).toBe(mood)
+    })
+
+    it('rejects a mood outside the Prisma enum', () => {
+      expect(MoodSchema.safeParse('REFLECTIVE').success).toBe(false)
+    })
+
+    it('parses analysis output with normalized tag names', () => {
+      expect(
+        EntryAnalysisSchema.parse({
+          mood: 'GRATEFUL',
+          summary: '  A quiet morning brought a sense of gratitude.  ',
+          suggestedTags: ['Morning', ' morning ', 'Home'],
+        }),
+      ).toEqual({
+        mood: 'GRATEFUL',
+        summary: 'A quiet morning brought a sense of gratitude.',
+        suggestedTags: ['Morning', 'Home'],
+      })
+    })
+
+    it('rejects empty or overlong summaries', () => {
+      const analysis = { mood: 'CALM', suggestedTags: [] }
+      expect(EntryAnalysisSchema.safeParse({ ...analysis, summary: '  ' }).success).toBe(false)
+      expect(
+        EntryAnalysisSchema.safeParse({
+          ...analysis,
+          summary: 'a'.repeat(ENTRY_SUMMARY_MAX_LENGTH + 1),
+        }).success,
+      ).toBe(false)
+    })
+
+    it('uses the existing tag name validation rules', () => {
+      expect(
+        EntryAnalysisSchema.safeParse({
+          mood: 'CALM',
+          summary: 'A short summary.',
+          suggestedTags: [''],
+        }).success,
+      ).toBe(false)
     })
   })
 })

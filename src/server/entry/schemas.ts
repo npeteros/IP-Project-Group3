@@ -5,6 +5,21 @@ import { z } from 'zod'
 
 export const TAG_NAME_MAX_LENGTH = 32
 export const TAGS_PER_ENTRY_MAX = 20
+export const ENTRY_SUMMARY_MAX_LENGTH = 500
+
+export const MoodSchema = z.enum([
+  'CALM',
+  'GRATEFUL',
+  'HAPPY',
+  'HOPEFUL',
+  'NEUTRAL',
+  'ANXIOUS',
+  'STRESSED',
+  'SAD',
+  'FRUSTRATED',
+])
+
+export type Mood = z.infer<typeof MoodSchema>
 
 /** The per-user unique key for a tag: trimmed and lowercased, matching `Tag.normalizedName`. */
 export function normalizeTagName(name: string) {
@@ -60,6 +75,7 @@ export const EntryCreateSchema = z.object({
   title: createTitle.optional(),
   body,
   writtenAt: writtenAt.optional(),
+  frameworkId: z.uuid().optional(),
   tags: tags.default([]),
 })
 
@@ -140,11 +156,29 @@ export const EntryTagSchema = z.object({
   name: z.string(),
 })
 
+export const EntryAnalysisSchema = z.object({
+  mood: MoodSchema,
+  summary: z
+    .string()
+    .trim()
+    .min(1, 'Summary cannot be empty.')
+    .max(
+      ENTRY_SUMMARY_MAX_LENGTH,
+      `Summary can be at most ${ENTRY_SUMMARY_MAX_LENGTH} characters.`,
+    ),
+  suggestedTags: tags,
+})
+
+export type EntryAnalysis = z.infer<typeof EntryAnalysisSchema>
+
 export const EntrySchema = z
   .object({
     id: z.uuid(),
     title: z.string().nullable(),
     body: z.string(),
+    mood: MoodSchema.nullable(),
+    summary: z.string().nullable(),
+    frameworkId: z.uuid().nullable(),
     writtenAt: z.iso.datetime({ offset: true }),
     entryDate: z.iso.date(),
     createdAt: z.iso.datetime({ offset: true }),
