@@ -27,6 +27,9 @@ function toEntry(row: EntryRow): Entry {
     id: row.id,
     title: row.title,
     body: row.body,
+    mood: row.mood,
+    summary: row.summary,
+    frameworkId: row.frameworkId,
     writtenAt: row.writtenAt.toISOString(),
     entryDate: dbDateToCalendarDate(row.entryDate),
     createdAt: row.createdAt.toISOString(),
@@ -105,12 +108,25 @@ export class EntryService {
     const entryDate = toEntryDate(writtenAt)
 
     return this.write(async (tx) => {
+      if (input.frameworkId) {
+        const framework = await tx.framework.findFirst({
+          where: {
+            id: input.frameworkId,
+            deletedAt: null,
+            OR: [{ userId: null }, { userId: this.userId }],
+          },
+          select: { id: true },
+        })
+        if (!framework) throw new NotFoundError('Framework not found.')
+      }
+
       const entry = await tx.entry.create({
         data: {
           userId: this.userId,
           // A missing title stays null until title generation lands
           title: input.title ?? null,
           body: input.body,
+          frameworkId: input.frameworkId,
           writtenAt,
           entryDate,
         },

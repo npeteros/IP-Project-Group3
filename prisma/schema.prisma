@@ -23,6 +23,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   entries       Entry[]
+  frameworks    Framework[]
   tags          Tag[]
   aiUsageLogs   AiUsageLog[]
 
@@ -83,22 +84,57 @@ enum EntryTagSource {
   AI_SUGGESTED
 }
 
+enum Mood {
+  CALM
+  GRATEFUL
+  HAPPY
+  HOPEFUL
+  NEUTRAL
+  ANXIOUS
+  STRESSED
+  SAD
+  FRUSTRATED
+}
+
 model Entry {
-  id        String     @id @default(uuid()) @db.Uuid
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String?
-  body      String     @db.Text
-  writtenAt DateTime   @default(now()) @db.Timestamptz(3)
-  entryDate DateTime   @db.Date
-  createdAt DateTime   @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime   @updatedAt @db.Timestamptz(3)
-  deletedAt DateTime?  @db.Timestamptz(3)
-  tags      EntryTag[]
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String?
+  body        String     @db.Text
+  mood        Mood?
+  summary     String?    @db.Text
+  analyzedAt  DateTime?  @db.Timestamptz(3)
+  frameworkId String?    @db.Uuid
+  framework   Framework? @relation(fields: [frameworkId], references: [id], onDelete: SetNull)
+  writtenAt   DateTime   @default(now()) @db.Timestamptz(3)
+  entryDate   DateTime   @db.Date
+  createdAt   DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @db.Timestamptz(3)
+  deletedAt   DateTime?  @db.Timestamptz(3)
+  tags        EntryTag[]
 
   @@index([userId, entryDate])
   @@index([userId, writtenAt])
   @@map("entry")
+}
+
+model Framework {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  description     String
+  icon            String
+  durationMinutes Int
+  prompts         Json
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt       DateTime? @db.Timestamptz(3)
+  entries         Entry[]
+
+  @@index([userId])
+  @@map("framework")
 }
 
 /// Hard-deleted, unlike entries: deleting a tag cascades to its `EntryTag` links,
