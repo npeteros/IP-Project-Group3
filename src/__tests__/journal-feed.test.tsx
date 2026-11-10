@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it } from 'vitest'
 import { JournalFeed } from '@/components/JournalFeed'
+import { api } from '@/src/lib/api'
 import type { JournalEntry } from '@/src/lib/placeholders/journal'
 
 const ENTRIES: JournalEntry[] = [
@@ -10,7 +12,14 @@ const ENTRIES: JournalEntry[] = [
 ]
 
 function renderFeed() {
-  render(<JournalFeed entries={ENTRIES} filters={['All', 'Work', 'Family', 'Gratitude']} />)
+  // Seed the streak so the badge doesn't fetch
+  const queryClient = new QueryClient()
+  queryClient.setQueryData(api.stats.get.queryKey(), { currentStreak: 4, lastEntryDate: null })
+  render(
+    <QueryClientProvider client={queryClient}>
+      <JournalFeed entries={ENTRIES} filters={['All', 'Work', 'Family', 'Gratitude']} />
+    </QueryClientProvider>,
+  )
 }
 
 const titles = () => screen.queryAllByRole('heading', { level: 3 }).map((h) => h.textContent)

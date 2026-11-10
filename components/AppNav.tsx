@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation'
 import { NAV_ITEMS, NEW_ENTRY_HREF, NEW_ENTRY_LABEL } from '@/src/lib/constants'
 import { typography } from '@/src/lib/typography'
 import { Icon } from './Icon'
-import { Logo, StreakBadge } from './ui'
+import { StreakBadge } from './StreakBadge'
+import { Logo } from './ui'
 
 function useIsActive() {
   const pathname = usePathname()

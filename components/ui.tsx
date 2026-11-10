@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { APP_NAME, type IconName, type Tone } from '@/src/lib/constants'
-import { STREAK_DAYS, type JournalEntry } from '@/src/lib/placeholders/journal'
+import type { JournalEntry } from '@/src/lib/placeholders/journal'
 import { typography } from '@/src/lib/typography'
 import { Icon } from './Icon'
 
@@ -30,17 +30,6 @@ export function Logo({
         }
       >
         {name}
-      </span>
-    </div>
-  )
-}
-
-export function StreakBadge({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-amber-100 px-3.5 py-2 text-amber-500">
-      <Icon name="flame" size={14} />
-      <span className="text-[13px] leading-none font-bold text-amber-700">
-        {compact ? STREAK_DAYS : `${STREAK_DAYS} day streak`}
       </span>
     </div>
   )
