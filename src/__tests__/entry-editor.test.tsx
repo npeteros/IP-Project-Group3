@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { EntryEditor } from '@/components/EntryEditor'
+import { EntryEditor, type EntryEditorContext } from '@/components/EntryEditor'
 import type { EntryFormValues } from '@/src/lib/entry-form'
-import type { EntryAnalysis } from '@/src/lib/placeholders/editor'
 import {
   EntryCreateSchema,
   EntryUpdateSchema,
@@ -12,13 +12,6 @@ import {
   TAGS_PER_ENTRY_MAX,
 } from '@/src/server/entry/schemas'
 
-const ANALYSIS: EntryAnalysis = {
-  mood: 'Calm',
-  suggestedTags: ['Morning', 'gratitude'],
-  summary: ['Grateful for a quiet morning'],
-  companionPrompt: 'What made this morning feel different?',
-}
-
 const INITIAL: EntryFormValues = {
   title: 'A slower morning',
   body: 'Coffee, no phone.',
@@ -26,20 +19,19 @@ const INITIAL: EntryFormValues = {
 }
 
 type EditorOptions = {
-  /** Pass `null` for a brand-new entry with no AI analysis. */
-  analysis?: EntryAnalysis | null
   initial?: EntryFormValues
   schema?: typeof EntryCreateSchema | typeof EntryUpdateSchema
   onSave?: (values: EntryCreateOutput | EntryUpdateOutput) => Promise<EntryFormValues | void>
   onDelete?: () => void
   tagSuggestions?: string[]
+  aiPanel?: (context: EntryEditorContext) => ReactNode
+  manageTags?: (context: EntryEditorContext) => ReactNode
   isSaving?: boolean
   isDeleting?: boolean
   error?: string | null
 }
 
 function renderEditor({
-  analysis = ANALYSIS,
   initial = INITIAL,
   schema = EntryUpdateSchema,
   onSave = vi.fn(async () => {}),
@@ -50,7 +42,6 @@ function renderEditor({
       schema={schema}
       dateLabel="Today, Aug 25 · 8:14 AM"
       initial={initial}
-      analysis={analysis ?? undefined}
       onSave={onSave}
       {...rest}
     />,
@@ -85,20 +76,7 @@ afterEach(() => {
   cleanup()
 })
 
-describe('EntryEditor tags and AI panel', () => {
-  it('hides suggestions that are already tags, case-insensitively', () => {
-    renderEditor()
-    expect(screen.getByRole('button', { name: 'Add suggested tag Morning' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Add suggested tag gratitude' })).toBeNull()
-  })
-
-  it('adds a suggested tag to the entry', () => {
-    renderEditor()
-    fireEvent.click(screen.getByRole('button', { name: 'Add suggested tag Morning' }))
-    expect(tagNames()).toEqual(['Gratitude', 'Morning'])
-    expect(screen.getByText('All suggested tags added.')).toBeTruthy()
-  })
-
+describe('EntryEditor tags', () => {
   it('adds a typed tag on Enter and ignores duplicates', () => {
     renderEditor()
     addTag('  Work ')
@@ -126,25 +104,167 @@ describe('EntryEditor tags and AI panel', () => {
       'Family',
     ])
   })
+})
 
-  it('appends the companion prompt to the entry and hides the card', () => {
-    renderEditor()
-    fireEvent.click(screen.getByRole('button', { name: 'Add to entry' }))
-    expect(bodyField().value).toBe('Coffee, no phone.\n\nWhat made this morning feel different?\n')
-    expect(screen.queryByRole('region', { name: 'Moodiary companion' })).toBeNull()
+describe('EntryEditor panels', () => {
+  /** Renders the context the editor hands to its slots, so tests can read and drive it. */
+  function Probe({ context }: { context: EntryEditorContext }) {
+    return (
+      <div>
+        <output aria-label="draft">{JSON.stringify(context.draft)}</output>
+        <output aria-label="tags">{JSON.stringify(context.tags)}</output>
+        <button onClick={() => context.setSavedTags(['Saved', 'Tags'])}>set saved</button>
+        <button onClick={() => context.tagRenamed('gratitude', 'Thankful')}>rename</button>
+        <button onClick={() => context.tagDeleted('GRATITUDE')}>delete</button>
+      </div>
+    )
+  }
+  const probe = (context: EntryEditorContext) => <Probe context={context} />
+  const read = (name: string) => JSON.parse(screen.getByLabelText(name).textContent ?? '')
+
+  it('puts the AI panel under "For this entry" and the tag manager under the tags', () => {
+    renderEditor({
+      aiPanel: () => <p>ai panel content</p>,
+      manageTags: () => <p>tag manager content</p>,
+    })
+
+    expect(
+      within(screen.getByRole('complementary', { name: 'For this entry' })).getByText(
+        'ai panel content',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByText('tag manager content')).toBeTruthy()
   })
 
-  it('dismisses the companion with "Not now"', () => {
+  it('renders nothing extra when no panels are given', () => {
     renderEditor()
-    expect(screen.getByRole('region', { name: 'Moodiary companion' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
-    expect(screen.queryByRole('region', { name: 'Moodiary companion' })).toBeNull()
+    expect(screen.getByRole('complementary', { name: 'For this entry' }).textContent).toBe(
+      'For this entry',
+    )
   })
 
-  it('explains the empty AI panel for a new entry', () => {
-    renderEditor({ analysis: null })
-    expect(screen.getByText(/detects the mood, suggests tags/)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Add to entry' })).toBeNull()
+  it('keeps the panels outside the entry form, so their fields never submit it', () => {
+    const { onSave } = renderEditor({
+      aiPanel: () => <input aria-label="panel field" />,
+      manageTags: () => <input aria-label="tag manager field" />,
+    })
+
+    const form = titleField().closest('form')
+    expect(form?.contains(screen.getByLabelText('panel field'))).toBe(false)
+    expect(form?.contains(screen.getByLabelText('tag manager field'))).toBe(false)
+    // The header's Save button still submits it
+    fireEvent.click(saveButton())
+    expect(form?.id).toBeTruthy()
+    return waitFor(() => expect(onSave).toHaveBeenCalledTimes(1))
+  })
+
+  it('gives the panels the draft as typed, including unsaved edits', async () => {
+    renderEditor({ aiPanel: probe })
+    expect(read('draft')).toEqual({ title: 'A slower morning', body: 'Coffee, no phone.' })
+
+    fireEvent.change(bodyField(), { target: { value: 'Coffee, no phone, and quiet.' } })
+
+    await waitFor(() =>
+      expect(read('draft')).toEqual({
+        title: 'A slower morning',
+        body: 'Coffee, no phone, and quiet.',
+      }),
+    )
+  })
+
+  it('gives the panels the tags as shown, including ones just added', async () => {
+    renderEditor({ aiPanel: probe })
+    addTag('Work')
+    await waitFor(() => expect(read('tags')).toEqual(['Gratitude', 'Work']))
+  })
+
+  it('setSavedTags shows the saved tags and leaves the form unedited', async () => {
+    renderEditor({ aiPanel: probe })
+    addTag('Work')
+    await waitFor(() => expect(beforeUnload().defaultPrevented).toBe(true))
+
+    fireEvent.click(screen.getByRole('button', { name: 'set saved' }))
+
+    await waitFor(() => expect(tagNames()).toEqual(['Saved', 'Tags']))
+    expect(beforeUnload().defaultPrevented).toBe(false)
+  })
+
+  it('setSavedTags still works after the form has been saved once', async () => {
+    // `reset` after a save unregisters every field, which once left setSavedTags doing nothing
+    const saved: EntryFormValues = { title: 'Saved title', body: 'Saved body', tags: ['Gratitude'] }
+    renderEditor({ aiPanel: probe, onSave: vi.fn(async () => saved) })
+    fireEvent.change(bodyField(), { target: { value: 'Edited' } })
+    fireEvent.click(saveButton())
+    await waitFor(() => expect(bodyField().value).toBe('Saved body'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'set saved' }))
+
+    await waitFor(() => expect(tagNames()).toEqual(['Saved', 'Tags']))
+  })
+
+  it('renaming a tag still works after the form has been saved once', async () => {
+    const saved: EntryFormValues = { title: 'Saved title', body: 'Saved body', tags: ['Gratitude'] }
+    renderEditor({ aiPanel: probe, onSave: vi.fn(async () => saved) })
+    fireEvent.change(bodyField(), { target: { value: 'Edited' } })
+    fireEvent.click(saveButton())
+    await waitFor(() => expect(bodyField().value).toBe('Saved body'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'rename' }))
+
+    await waitFor(() => expect(tagNames()).toEqual(['Thankful']))
+    expect(beforeUnload().defaultPrevented).toBe(false)
+  })
+
+  it('setSavedTags does not discard other unsaved edits', async () => {
+    renderEditor({ aiPanel: probe })
+    fireEvent.change(titleField(), { target: { value: 'Edited title' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'set saved' }))
+
+    await waitFor(() => expect(tagNames()).toEqual(['Saved', 'Tags']))
+    expect(titleField().value).toBe('Edited title')
+    expect(beforeUnload().defaultPrevented).toBe(true)
+  })
+
+  it('follows a renamed tag without counting it as an edit', async () => {
+    renderEditor({ aiPanel: probe })
+
+    fireEvent.click(screen.getByRole('button', { name: 'rename' }))
+
+    await waitFor(() => expect(tagNames()).toEqual(['Thankful']))
+    expect(beforeUnload().defaultPrevented).toBe(false)
+  })
+
+  it('follows a deleted tag without counting it as an edit', async () => {
+    renderEditor({ aiPanel: probe })
+
+    fireEvent.click(screen.getByRole('button', { name: 'delete' }))
+
+    await waitFor(() => expect(tagNames()).toEqual([]))
+    expect(beforeUnload().defaultPrevented).toBe(false)
+  })
+
+  it('keeps earlier unsaved tag edits when another tag is renamed', async () => {
+    renderEditor({ aiPanel: probe })
+    addTag('Work')
+    await waitFor(() => expect(tagNames()).toEqual(['Gratitude', 'Work']))
+
+    fireEvent.click(screen.getByRole('button', { name: 'rename' }))
+
+    await waitFor(() => expect(tagNames()).toEqual(['Thankful', 'Work']))
+    // "Work" was never saved, so the form is still edited
+    expect(beforeUnload().defaultPrevented).toBe(true)
+  })
+
+  it('saves the renamed tag name, not the old one', async () => {
+    const { onSave } = renderEditor({ aiPanel: probe })
+    fireEvent.click(screen.getByRole('button', { name: 'rename' }))
+    await waitFor(() => expect(tagNames()).toEqual(['Thankful']))
+
+    fireEvent.click(saveButton())
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1))
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ tags: ['Thankful'] }))
   })
 })
 

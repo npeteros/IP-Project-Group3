@@ -140,6 +140,34 @@ describe('EntryUpdateSchema', () => {
   it('still rejects a whitespace-only body', () => {
     expect(EntryUpdateSchema.safeParse({ body: '  ' }).success).toBe(false)
   })
+
+  describe('aiSuggestedTags', () => {
+    it('is accepted alongside tags and de-duplicated like them', () => {
+      expect(
+        EntryUpdateSchema.parse({ tags: ['Calm', 'Work'], aiSuggestedTags: ['Calm', 'calm'] }),
+      ).toEqual({ tags: ['Calm', 'Work'], aiSuggestedTags: ['Calm'] })
+    })
+
+    it('is left out of the parsed result when omitted', () => {
+      expect(EntryUpdateSchema.parse({ tags: ['Calm'] })).toEqual({ tags: ['Calm'] })
+    })
+
+    it('is rejected without tags, since there is nothing to link', () => {
+      expect(
+        errorsOf(EntryUpdateSchema.safeParse({ body: 'x', aiSuggestedTags: ['Calm'] })),
+      ).toEqual({
+        aiSuggestedTags: 'aiSuggestedTags can only be sent together with tags.',
+      })
+    })
+
+    it('follows the same tag name rules', () => {
+      const result = EntryUpdateSchema.safeParse({
+        tags: ['Calm'],
+        aiSuggestedTags: ['x'.repeat(TAG_NAME_MAX_LENGTH + 1)],
+      })
+      expect(result.success).toBe(false)
+    })
+  })
 })
 
 describe('EntryIdSchema', () => {

@@ -4,9 +4,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'
 import { api } from '@/src/lib/api'
+import { queueEntryAnalysis } from '@/src/lib/entry-analysis'
 import { toEntryFormValues } from '@/src/lib/entry-form'
 import { EntryCreateSchema, type EntryCreateOutput } from '@/src/server/entry/schemas'
+import { EntryAiPanel } from './EntryAiPanel'
 import { EntryEditor } from './EntryEditor'
+import { ManageTags } from './ManageTags'
 
 /** `/journal/new`: creates the entry, then opens it at `/journal/[id]`. */
 export function NewEntryEditor({ dateLabel }: { dateLabel: string }) {
@@ -22,6 +25,8 @@ export function NewEntryEditor({ dateLabel }: { dateLabel: string }) {
     const entry = await createEntry.mutateAsync(values)
     // Seed the entry page's query so it opens without a loading state
     queryClient.setQueryData(api.entry.findOneEntry.queryKey({ id: entry.id }), entry)
+    // The entry page picks this up and starts the analysis there
+    queueEntryAnalysis(entry.id)
     startNavigation(() => router.push(`/journal/${entry.id}`))
     return toEntryFormValues(entry)
   }
@@ -32,6 +37,11 @@ export function NewEntryEditor({ dateLabel }: { dateLabel: string }) {
       dateLabel={dateLabel}
       tagSuggestions={tagList.data?.tags.map((tag) => tag.name)}
       onSave={save}
+      // Nothing to analyze until it's saved, but the Companion can already talk about the draft
+      aiPanel={(editor) => <EntryAiPanel draft={editor.draft} />}
+      manageTags={(editor) => (
+        <ManageTags onRenamed={editor.tagRenamed} onDeleted={editor.tagDeleted} />
+      )}
       isSaving={createEntry.isPending || isNavigating}
       error={createEntry.error?.message ?? null}
     />

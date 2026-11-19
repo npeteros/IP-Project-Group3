@@ -4,6 +4,7 @@ export const CHAT_MAX_MESSAGES = 100
 export const CHAT_MAX_MESSAGE_LENGTH = 4_000
 export const CHAT_MAX_TOTAL_MESSAGE_LENGTH = 128_000
 export const CHAT_MAX_DRAFT_LENGTH = 12_000
+export const CHAT_MAX_DRAFT_TITLE_LENGTH = 160
 
 const ChatMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
@@ -14,7 +15,7 @@ const EntryDraftSchema = z.object({
   title: z
     .string()
     .trim()
-    .transform((title) => title.slice(0, 160) || undefined)
+    .transform((title) => title.slice(0, CHAT_MAX_DRAFT_TITLE_LENGTH) || undefined)
     .optional(),
   body: z
     .string()
