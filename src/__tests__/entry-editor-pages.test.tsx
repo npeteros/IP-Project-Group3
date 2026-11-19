@@ -18,6 +18,9 @@ const ENTRY: Entry = {
   id: ID,
   title: 'A slower morning',
   body: 'Coffee, no phone.',
+  mood: null,
+  summary: null,
+  frameworkId: null,
   // Far enough back that the header never says "Today"
   writtenAt: '2020-01-15T00:14:00.000Z',
   entryDate: '2020-01-15',
