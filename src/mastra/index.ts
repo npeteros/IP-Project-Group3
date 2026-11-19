@@ -2,6 +2,7 @@ import { Mastra } from '@mastra/core/mastra'
 import { LibSQLStore } from '@mastra/libsql'
 import { DuckDBStore } from '@mastra/duckdb'
 import { MastraCompositeStore } from '@mastra/core/storage'
+import { entryAnalysisAgent } from './agents/entry-analysis-agent'
 import { reflectionAgent } from './agents/reflection-agent'
 import { getEntryTool } from './tools/get-entry-tool'
 import { searchEntriesTool } from './tools/search-entries-tool'
@@ -9,7 +10,7 @@ import { answerRelevancyScorer, toxicityScorer } from './scorers'
 import { logger, observability } from './observability'
 
 export const mastra = new Mastra({
-  agents: { reflectionAgent },
+  agents: { reflectionAgent, entryAnalysisAgent },
   tools: { getEntryTool, searchEntriesTool },
   scorers: { answerRelevancyScorer, toxicityScorer },
   storage: new MastraCompositeStore({

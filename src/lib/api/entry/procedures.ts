@@ -1,6 +1,7 @@
 import { defineMutation, defineQuery, request } from '@/src/lib/api/client'
 import type {
   Entry,
+  EntryAnalysis,
   EntryCreateInput,
   EntryIdInput,
   EntryList,
@@ -31,5 +32,11 @@ export const entry = {
   delete: defineMutation(
     ({ id }: EntryIdInput) => request<void>(`${ENTRIES}/${id}`, { method: 'DELETE' }),
     { invalidates: [['entry'], ['stats'], ['tag']] },
+  ),
+  // Saves the entry's mood and summary; suggested tags are only returned
+  analyze: defineMutation(
+    ({ id }: EntryIdInput) =>
+      request<EntryAnalysis>(`${ENTRIES}/${id}/analysis`, { method: 'POST' }),
+    { invalidates: [['entry'], ['stats']] },
   ),
 }

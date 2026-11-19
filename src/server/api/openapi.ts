@@ -2,6 +2,7 @@ import { createDocument, type ZodOpenApiPathsObject } from 'zod-openapi'
 import { APP_NAME } from '@/src/lib/constants'
 import { errorResponses } from '@/src/server/api/openapi-shared'
 import { chatPaths } from '@/src/server/chat/openapi'
+import { entryPaths } from '@/src/server/entry/openapi'
 import { statsPaths } from '@/src/server/stats/openapi'
 import { tagPaths } from '@/src/server/tag/openapi'
 
@@ -10,6 +11,7 @@ export { ApiErrorSchema, errorResponses } from '@/src/server/api/openapi-shared'
 // Each domain adds its paths here, relative to the `/api/v1` server, e.g. `...entryPaths`
 const paths: ZodOpenApiPathsObject = {
   ...chatPaths,
+  ...entryPaths,
   ...tagPaths,
   ...statsPaths,
 }
