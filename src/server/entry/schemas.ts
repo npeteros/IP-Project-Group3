@@ -85,6 +85,8 @@ export type EntryCreateOutput = z.infer<typeof EntryCreateSchema>
 /**
  * `PATCH /api/v1/entries/:id` body. No defaults: an omitted field is left unchanged.
  * When `tags` is present it replaces the entry's full set of tags.
+ * `aiSuggestedTags` are accepted AI suggestions: they're added to the entry (on top of `tags` when
+ * both are sent) and newly linked ones are marked `AI_SUGGESTED`. Existing links keep their source.
  */
 export const EntryUpdateSchema = z
   .object({
@@ -92,14 +94,16 @@ export const EntryUpdateSchema = z
     body: body.optional(),
     writtenAt: writtenAt.optional(),
     tags: tags.optional(),
+    aiSuggestedTags: tags.optional(),
   })
   .refine(
     (input) =>
       input.title !== undefined ||
       input.body !== undefined ||
       input.writtenAt !== undefined ||
-      input.tags !== undefined,
-    'Change at least one of title, body, writtenAt or tags.',
+      input.tags !== undefined ||
+      input.aiSuggestedTags !== undefined,
+    'Change at least one of title, body, writtenAt, tags or aiSuggestedTags.',
   )
 
 export type EntryUpdateInput = z.input<typeof EntryUpdateSchema>
@@ -156,18 +160,22 @@ export const EntryTagSchema = z.object({
   name: z.string(),
 })
 
-export const EntryAnalysisSchema = z.object({
-  mood: MoodSchema,
-  summary: z
-    .string()
-    .trim()
-    .min(1, 'Summary cannot be empty.')
-    .max(
-      ENTRY_SUMMARY_MAX_LENGTH,
-      `Summary can be at most ${ENTRY_SUMMARY_MAX_LENGTH} characters.`,
-    ),
-  suggestedTags: tags,
-})
+/** `POST /api/v1/entries/:id/analysis` response. `suggestedTags` are not stored. */
+export const EntryAnalysisSchema = z
+  .object({
+    mood: MoodSchema,
+    summary: z
+      .string()
+      .trim()
+      .min(1, 'Summary cannot be empty.')
+      .max(
+        ENTRY_SUMMARY_MAX_LENGTH,
+        `Summary can be at most ${ENTRY_SUMMARY_MAX_LENGTH} characters.`,
+      ),
+    // `.overwrite` rather than `tags`' transform, so it can document a response
+    suggestedTags: z.array(tagName).max(TAGS_PER_ENTRY_MAX).overwrite(dedupeTags),
+  })
+  .meta({ id: 'EntryAnalysis' })
 
 export type EntryAnalysis = z.infer<typeof EntryAnalysisSchema>
 

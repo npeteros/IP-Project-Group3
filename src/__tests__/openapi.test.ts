@@ -52,6 +52,27 @@ describe('openApiDocument', () => {
   })
 })
 
+describe('entry analysis path', () => {
+  const analyze = openApiDocument.paths?.['/entries/{id}/analysis']?.post
+
+  it('documents the analysis endpoint and its status codes', () => {
+    expect(analyze?.operationId).toBe('analyzeEntry')
+    expect(Object.keys(analyze?.responses ?? {})).toEqual([
+      '200',
+      '400',
+      '401',
+      '404',
+      '409',
+      '429',
+      '500',
+    ])
+  })
+
+  it('registers the EntryAnalysis schema', () => {
+    expect(Object.keys(openApiDocument.components?.schemas ?? {})).toContain('EntryAnalysis')
+  })
+})
+
 describe('tag paths', () => {
   const paths = openApiDocument.paths ?? {}
 

@@ -125,7 +125,7 @@ describe('EntryUpdateSchema', () => {
 
   it.each([{}, { timeZone: 'Asia/Manila' }])('rejects %j: nothing to change', (input) => {
     expect(errorsOf(EntryUpdateSchema.safeParse(input))).toEqual({
-      '': 'Change at least one of title, body, writtenAt or tags.',
+      '': 'Change at least one of title, body, writtenAt, tags or aiSuggestedTags.',
     })
   })
 
@@ -139,6 +139,12 @@ describe('EntryUpdateSchema', () => {
 
   it('still rejects a whitespace-only body', () => {
     expect(EntryUpdateSchema.safeParse({ body: '  ' }).success).toBe(false)
+  })
+
+  it('accepts aiSuggestedTags on their own, de-duplicated', () => {
+    expect(EntryUpdateSchema.parse({ aiSuggestedTags: ['Sleep', 'sleep'] })).toEqual({
+      aiSuggestedTags: ['Sleep'],
+    })
   })
 })
 

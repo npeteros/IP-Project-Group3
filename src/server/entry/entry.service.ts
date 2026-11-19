@@ -1,8 +1,15 @@
 import type { Prisma, PrismaClient } from '@/src/generated/prisma/client'
+import { EntryTagSource } from '@/src/generated/prisma/enums'
 import prisma from '@/src/lib/prisma'
 import { calendarDateToDbDate, dbDateToCalendarDate, toCalendarDate } from '@/src/lib/timezone'
-import { ConflictError, isUniqueViolation, NotFoundError } from '@/src/server/api/errors'
 import {
+  BadRequestError,
+  ConflictError,
+  isUniqueViolation,
+  NotFoundError,
+} from '@/src/server/api/errors'
+import {
+  TAGS_PER_ENTRY_MAX,
   normalizeTagName,
   type Entry,
   type EntryCreateOutput,
@@ -132,7 +139,7 @@ export class EntryService {
         },
       })
 
-      await this.syncTags(tx, entry.id, input.tags)
+      await this.syncTags(tx, entry.id, { tags: input.tags })
       return this.readEntry(tx, entry.id)
     })
   }
@@ -156,7 +163,9 @@ export class EntryService {
       })
       if (count === 0) throw new NotFoundError('Entry not found.')
 
-      if (input.tags !== undefined) await this.syncTags(tx, id, input.tags)
+      if (input.tags !== undefined || input.aiSuggestedTags !== undefined) {
+        await this.syncTags(tx, id, { tags: input.tags, aiSuggestedTags: input.aiSuggestedTags })
+      }
       return this.readEntry(tx, id)
     })
   }
@@ -186,12 +195,54 @@ export class EntryService {
   }
 
   /**
-   * Makes the entry's tag set exactly `names`: finds or creates each tag for this
-   * user (matched on `normalizedName`), links the ones that aren't linked yet, and
-   * unlinks the rest. Shared by create and update.
+   * Updates the entry's tag links. When `tags` is given the entry's tag set becomes exactly
+   * `tags` plus `aiSuggestedTags`, and other links are removed; otherwise `aiSuggestedTags` are
+   * added to the current links. Newly linked `aiSuggestedTags` are marked `AI_SUGGESTED`, other
+   * new links `MANUAL`, and existing links keep their source. Shared by create and update.
    */
-  private async syncTags(tx: Prisma.TransactionClient, entryId: string, names: string[]) {
-    // The schema already de-duplicates; this guards direct callers. The first spelling wins.
+  private async syncTags(
+    tx: Prisma.TransactionClient,
+    entryId: string,
+    { tags, aiSuggestedTags = [] }: { tags?: string[]; aiSuggestedTags?: string[] },
+  ) {
+    const manualTagIds = await this.upsertTags(tx, tags ?? [])
+    const aiTagIds = new Set(await this.upsertTags(tx, aiSuggestedTags))
+
+    const baseTagIds =
+      tags === undefined
+        ? (await tx.entryTag.findMany({ where: { entryId }, select: { tagId: true } })).map(
+            (link) => link.tagId,
+          )
+        : manualTagIds
+    const tagIds = [...new Set([...baseTagIds, ...aiTagIds])]
+    // Throwing rolls back the whole write, including any tags created above
+    if (tagIds.length > TAGS_PER_ENTRY_MAX) {
+      throw new BadRequestError(`An entry can have at most ${TAGS_PER_ENTRY_MAX} tags.`)
+    }
+
+    // Unlinking removes the join row only; the tag itself is untouched
+    if (tags !== undefined) {
+      await tx.entryTag.deleteMany({ where: { entryId, tagId: { notIn: tagIds } } })
+    }
+    if (tagIds.length > 0) {
+      // `skipDuplicates` leaves existing links, and their source, as they are
+      await tx.entryTag.createMany({
+        data: tagIds.map((tagId) => ({
+          entryId,
+          tagId,
+          source: aiTagIds.has(tagId) ? EntryTagSource.AI_SUGGESTED : EntryTagSource.MANUAL,
+        })),
+        skipDuplicates: true,
+      })
+    }
+  }
+
+  /**
+   * Finds or creates each named tag for this user (matched on `normalizedName`) and returns
+   * their ids, de-duplicated in order. The first spelling wins.
+   */
+  private async upsertTags(tx: Prisma.TransactionClient, names: string[]) {
+    // The schema already de-duplicates; this guards direct callers.
     const byNormalized = new Map<string, string>()
     for (const raw of names) {
       const name = raw.trim()
@@ -212,15 +263,7 @@ export class EntryService {
       })
       tagIds.push(tag.id)
     }
-
-    // Unlinking removes the join row only; the tag itself is untouched
-    await tx.entryTag.deleteMany({ where: { entryId, tagId: { notIn: tagIds } } })
-    if (tagIds.length > 0) {
-      await tx.entryTag.createMany({
-        data: tagIds.map((tagId) => ({ entryId, tagId })),
-        skipDuplicates: true,
-      })
-    }
+    return tagIds
   }
 
   private async readEntry(
