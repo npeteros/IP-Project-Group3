@@ -92,6 +92,10 @@ export const EntryUpdateSchema = z
     body: body.optional(),
     writtenAt: writtenAt.optional(),
     tags: tags.optional(),
+    aiSuggestedTags: tags.optional().meta({
+      description:
+        'Names in `tags` that came from an AI suggestion. Tags newly linked to the entry with one of these names are stored as AI_SUGGESTED instead of MANUAL.',
+    }),
   })
   .refine(
     (input) =>
@@ -101,6 +105,10 @@ export const EntryUpdateSchema = z
       input.tags !== undefined,
     'Change at least one of title, body, writtenAt or tags.',
   )
+  .refine((input) => input.aiSuggestedTags === undefined || input.tags !== undefined, {
+    message: 'aiSuggestedTags can only be sent together with tags.',
+    path: ['aiSuggestedTags'],
+  })
 
 export type EntryUpdateInput = z.input<typeof EntryUpdateSchema>
 export type EntryUpdateOutput = z.infer<typeof EntryUpdateSchema>

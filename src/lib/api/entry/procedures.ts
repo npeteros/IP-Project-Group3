@@ -1,6 +1,7 @@
 import { defineMutation, defineQuery, request } from '@/src/lib/api/client'
 import type {
   Entry,
+  EntryAnalysis,
   EntryCreateInput,
   EntryIdInput,
   EntryList,
@@ -27,6 +28,17 @@ export const entry = {
     ({ id, ...input }: EntryIdInput & EntryUpdateInput) =>
       request<Entry>(`${ENTRIES}/${id}`, { method: 'PATCH', body: input }),
     { invalidates: [['entry'], ['stats'], ['tag']] },
+  ),
+  /**
+   * Runs the analysis agent on a saved entry and returns its mood, summary and suggested tags.
+   * The server route (`POST /api/v1/entries/:id/analyze`) comes with S4-02. Until it exists this
+   * answers 404, which the editor's AI panel treats like any other failed analysis.
+   */
+  analyze: defineMutation(
+    ({ id }: EntryIdInput) =>
+      request<EntryAnalysis>(`${ENTRIES}/${id}/analyze`, { method: 'POST' }),
+    // The analysis is stored on the entry, and moods feed the stats
+    { invalidates: [['entry'], ['stats']] },
   ),
   delete: defineMutation(
     ({ id }: EntryIdInput) => request<void>(`${ENTRIES}/${id}`, { method: 'DELETE' }),

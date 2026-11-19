@@ -118,6 +118,22 @@ export const CHAT_PAGE = {
   inputPlaceholder: 'Ask your journal anything…',
 }
 
+/** Messages for AI features that are slow, rate limited or down. They're quiet on purpose. */
+export const AI_MESSAGES = {
+  rateLimited: 'You’ve reached the AI limit for now. Try again in a little while.',
+  analysisFailed: 'Analysis isn’t available right now. You can keep writing.',
+}
+
+export const AI_PANEL = {
+  notAnalyzed:
+    'Once you’ve written a few lines, Moodiary detects the mood, suggests tags and summarizes the entry here.',
+  savedNotAnalyzed: 'This entry hasn’t been analyzed yet.',
+  analyzing: 'Analyzing your entry…',
+  companionName: 'Moodiary companion',
+  companionIntro: 'Ask about what you’re writing, or for a gentle prompt to keep going.',
+  companionPlaceholder: 'Ask about this entry…',
+}
+
 export const LOGIN_PAGE = {
   title: 'Welcome back',
   description: 'Sign in to keep your journal private and synced.',
