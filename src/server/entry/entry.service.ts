@@ -156,7 +156,9 @@ export class EntryService {
       })
       if (count === 0) throw new NotFoundError('Entry not found.')
 
-      if (input.tags !== undefined) await this.syncTags(tx, id, input.tags)
+      if (input.tags !== undefined) {
+        await this.syncTags(tx, id, input.tags, input.aiSuggestedTags)
+      }
       return this.readEntry(tx, id)
     })
   }
@@ -189,8 +191,18 @@ export class EntryService {
    * Makes the entry's tag set exactly `names`: finds or creates each tag for this
    * user (matched on `normalizedName`), links the ones that aren't linked yet, and
    * unlinks the rest. Shared by create and update.
+   *
+   * Links created here are MANUAL, except for tags named in `aiSuggested`, which are stored as
+   * AI_SUGGESTED. A tag that was already linked keeps the source it had.
    */
-  private async syncTags(tx: Prisma.TransactionClient, entryId: string, names: string[]) {
+  private async syncTags(
+    tx: Prisma.TransactionClient,
+    entryId: string,
+    names: string[],
+    aiSuggested: string[] = [],
+  ) {
+    const aiNames = new Set(aiSuggested.map(normalizeTagName))
+
     // The schema already de-duplicates; this guards direct callers. The first spelling wins.
     const byNormalized = new Map<string, string>()
     for (const raw of names) {
@@ -200,7 +212,7 @@ export class EntryService {
         byNormalized.set(normalizedName, name)
     }
 
-    const tagIds: string[] = []
+    const links: { tagId: string; source: 'MANUAL' | 'AI_SUGGESTED' }[] = []
     for (const [normalizedName, name] of byNormalized) {
       // Update is empty on purpose: an existing tag keeps the spelling it was created with.
       // Deleted tags are gone (hard delete), so a re-used name always creates a new tag.
@@ -210,14 +222,15 @@ export class EntryService {
         update: {},
         select: { id: true },
       })
-      tagIds.push(tag.id)
+      links.push({ tagId: tag.id, source: aiNames.has(normalizedName) ? 'AI_SUGGESTED' : 'MANUAL' })
     }
+    const tagIds = links.map((link) => link.tagId)
 
     // Unlinking removes the join row only; the tag itself is untouched
     await tx.entryTag.deleteMany({ where: { entryId, tagId: { notIn: tagIds } } })
     if (tagIds.length > 0) {
       await tx.entryTag.createMany({
-        data: tagIds.map((tagId) => ({ entryId, tagId })),
+        data: links.map(({ tagId, source }) => ({ entryId, tagId, source })),
         skipDuplicates: true,
       })
     }
