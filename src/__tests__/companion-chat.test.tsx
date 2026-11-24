@@ -1,6 +1,11 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CompanionChat } from '@/components/CompanionChat'
+import {
+  INTERRUPTED_REPLY,
+  readConversation,
+  storeConversation,
+} from '@/src/lib/chat/companionConversations'
 import { AI_PANEL } from '@/src/lib/constants'
 import type { ReflectionChatMessage } from '@/src/lib/chat/useReflectionChat'
 import { CHAT_MAX_DRAFT_LENGTH, CHAT_MAX_MESSAGE_LENGTH } from '@/src/server/chat/schemas'
@@ -56,9 +61,9 @@ describe('CompanionChat', () => {
     it('gives the shared chat hook the current title and body', () => {
       render(<CompanionChat draft={{ title: '  A quiet day ', body: ' I took a walk. ' }} />)
 
-      expect(chat.useReflectionChat).toHaveBeenLastCalledWith({
-        entryDraft: { title: 'A quiet day', body: 'I took a walk.' },
-      })
+      expect(chat.useReflectionChat).toHaveBeenLastCalledWith(
+        expect.objectContaining({ entryDraft: { title: 'A quiet day', body: 'I took a walk.' } }),
+      )
     })
 
     it('truncates a long body to CHAT_MAX_DRAFT_LENGTH before handing it over', () => {
@@ -74,6 +79,48 @@ describe('CompanionChat', () => {
       rerender(<CompanionChat draft={{ title: 'T', body: 'one two' }} />)
 
       expect(chat.useReflectionChat.mock.lastCall![0].entryDraft.body).toBe('one two')
+    })
+  })
+
+  describe('carrying the conversation over', () => {
+    const KEY = 'entry-1'
+    /** Renders, reading `initialMessages` on mount as the real hook does. */
+    function renderReadingInitial(conversationId?: string) {
+      let initial: ReflectionChatMessage[] | undefined
+      chat.useReflectionChat.mockImplementationOnce(
+        ({ initialMessages }: { initialMessages: () => ReflectionChatMessage[] }) => {
+          initial = initialMessages()
+          return chat
+        },
+      )
+      render(<CompanionChat draft={DRAFT} conversationId={conversationId} />)
+      return initial
+    }
+
+    it('starts from the conversation stored under its id', () => {
+      storeConversation(KEY, [user('Hi'), assistant('Hello.')])
+      expect(renderReadingInitial(KEY)).toEqual([user('Hi'), assistant('Hello.')])
+    })
+
+    it('starts empty without an id', () => {
+      expect(renderReadingInitial()).toEqual([])
+    })
+
+    it('stores the conversation while mounted, and clears it on unmount', () => {
+      chat.messages = [user('Hi'), assistant('Hello.')]
+      const { unmount } = render(<CompanionChat draft={DRAFT} conversationId={KEY} />)
+
+      expect(readConversation(KEY)).toEqual([user('Hi'), assistant('Hello.')])
+      unmount()
+      expect(readConversation(KEY)).toEqual([])
+    })
+
+    it('stores a reply still streaming as interrupted, so it can be retried later', () => {
+      chat.messages = [user('Hi'), assistant('Hel')]
+      chat.status = 'streaming'
+      render(<CompanionChat draft={DRAFT} conversationId={KEY} />)
+
+      expect(readConversation(KEY).at(-1)).toEqual(assistant('Hel', INTERRUPTED_REPLY))
     })
   })
 
