@@ -33,6 +33,29 @@ export type IconName =
   | 'users'
   | 'frame'
 
+/** Icons a framework can use. The builder offers these, and the API rejects anything else. */
+export const FRAMEWORK_ICONS = [
+  'layers',
+  'globe',
+  'check',
+  'cross',
+  'heart',
+  'cloud',
+  'flame',
+  'sun',
+  'book',
+  'quote',
+  'frame',
+  'users',
+] as const satisfies readonly IconName[]
+
+export type FrameworkIcon = (typeof FRAMEWORK_ICONS)[number]
+
+/** A stored icon name as something `Icon` can draw; an unknown name falls back to `layers`. */
+export function toFrameworkIcon(icon: string): FrameworkIcon {
+  return (FRAMEWORK_ICONS as readonly string[]).includes(icon) ? (icon as FrameworkIcon) : 'layers'
+}
+
 export type Tone = 'cloud' | 'sage'
 
 export const APP_NAME = 'Moodiary'

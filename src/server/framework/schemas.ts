@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { FRAMEWORK_ICONS } from '@/src/lib/constants'
 
 // Shared by framework routes, client procedures, and forms; keep this file server-agnostic.
 
@@ -32,7 +33,7 @@ export type FrameworkIdOutput = z.infer<typeof FrameworkIdSchema>
 export const FrameworkCreateSchema = z.object({
   name: z.string().trim().min(1, 'Enter a framework name.'),
   description: z.string().trim().min(1, 'Enter a framework description.'),
-  icon: z.string().trim().min(1, 'Choose an icon.'),
+  icon: z.enum(FRAMEWORK_ICONS, 'Choose an icon.'),
   durationMinutes: z.number().int().positive(),
   prompts: z
     .array(z.string().trim().min(1, 'Prompts cannot be empty.'))

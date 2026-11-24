@@ -3,6 +3,7 @@ import { APP_NAME } from '@/src/lib/constants'
 import { errorResponses } from '@/src/server/api/openapi-shared'
 import { chatPaths } from '@/src/server/chat/openapi'
 import { entryPaths } from '@/src/server/entry/openapi'
+import { frameworkPaths } from '@/src/server/framework/openapi'
 import { statsPaths } from '@/src/server/stats/openapi'
 import { tagPaths } from '@/src/server/tag/openapi'
 
@@ -13,6 +14,7 @@ const paths: ZodOpenApiPathsObject = {
   ...chatPaths,
   ...entryPaths,
   ...tagPaths,
+  ...frameworkPaths,
   ...statsPaths,
 }
 

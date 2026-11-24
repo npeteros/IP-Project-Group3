@@ -33,12 +33,12 @@ describe('Framework schemas', () => {
     expect(FrameworkIdSchema.safeParse({ id: 'daily-review' }).success).toBe(false)
   })
 
-  it('trims framework fields and prompts', () => {
+  it('trims framework text fields and prompts', () => {
     expect(
       FrameworkCreateSchema.parse({
         name: ' Daily Review ',
         description: ' A short reflection ',
-        icon: ' check ',
+        icon: 'check',
         durationMinutes: 3,
         prompts: [' What went well? '],
       }),
@@ -65,6 +65,12 @@ describe('Framework schemas', () => {
       ).toBe(false)
     },
   )
+
+  it('only accepts icons the app can draw', () => {
+    const create = { name: 'Test', description: 'Test', durationMinutes: 1, prompts: ['Prompt'] }
+    expect(FrameworkCreateSchema.safeParse({ ...create, icon: 'sun' }).success).toBe(true)
+    expect(FrameworkCreateSchema.safeParse({ ...create, icon: 'rocket' }).success).toBe(false)
+  })
 
   it('rejects non-positive or fractional durations', () => {
     const create = { name: 'Test', description: 'Test', icon: 'check', prompts: ['Prompt'] }
