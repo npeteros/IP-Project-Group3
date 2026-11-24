@@ -238,6 +238,40 @@ describe('EntryService.updateEntry', () => {
     })
   })
 
+  it('stores the tags named in aiSuggestedTags as AI_SUGGESTED and the rest as MANUAL', async () => {
+    const { tx, service } = setup()
+    await service.updateEntry('e1', {
+      tags: ['Work', 'Calm'],
+      aiSuggestedTags: ['Calm'],
+    })
+
+    expect(tx.entryTag.createMany.mock.calls[0][0].data).toEqual([
+      { entryId: 'e1', tagId: 'id-work', source: 'MANUAL' },
+      { entryId: 'e1', tagId: 'id-calm', source: 'AI_SUGGESTED' },
+    ])
+  })
+
+  it('matches aiSuggestedTags against tags case-insensitively', async () => {
+    const { tx, service } = setup()
+    await service.updateEntry('e1', {
+      tags: ['Calm'],
+      aiSuggestedTags: ['  CALM '],
+    })
+
+    expect(tx.entryTag.createMany.mock.calls[0][0].data).toEqual([
+      { entryId: 'e1', tagId: 'id-calm', source: 'AI_SUGGESTED' },
+    ])
+  })
+
+  it('stores every link as MANUAL when aiSuggestedTags is omitted', async () => {
+    const { tx, service } = setup()
+    await service.updateEntry('e1', { tags: ['Calm'] })
+
+    expect(tx.entryTag.createMany.mock.calls[0][0].data).toEqual([
+      { entryId: 'e1', tagId: 'id-calm', source: 'MANUAL' },
+    ])
+  })
+
   it('unlinks every tag when tags is an empty array', async () => {
     const { tx, service } = setup()
     await service.updateEntry('e1', { tags: [] })

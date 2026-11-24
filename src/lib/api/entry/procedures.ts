@@ -33,7 +33,8 @@ export const entry = {
     ({ id }: EntryIdInput) => request<void>(`${ENTRIES}/${id}`, { method: 'DELETE' }),
     { invalidates: [['entry'], ['stats'], ['tag']] },
   ),
-  // Saves the entry's mood and summary; suggested tags are only returned
+  // Runs the analysis agent on a saved entry. Saves the entry's mood and summary; suggested tags
+  // are only returned. Moods feed the stats, so stats are invalidated too.
   analyze: defineMutation(
     ({ id }: EntryIdInput) =>
       request<EntryAnalysis>(`${ENTRIES}/${id}/analysis`, { method: 'POST' }),

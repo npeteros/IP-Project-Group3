@@ -94,7 +94,10 @@ export const EntryUpdateSchema = z
     body: body.optional(),
     writtenAt: writtenAt.optional(),
     tags: tags.optional(),
-    aiSuggestedTags: tags.optional(),
+    aiSuggestedTags: tags.optional().meta({
+      description:
+        'Accepted AI tag suggestions. They are added to the entry (on top of `tags` when both are sent), and newly linked ones are stored as AI_SUGGESTED instead of MANUAL. Existing links keep their source.',
+    }),
   })
   .refine(
     (input) =>

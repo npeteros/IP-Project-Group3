@@ -141,9 +141,29 @@ describe('EntryUpdateSchema', () => {
     expect(EntryUpdateSchema.safeParse({ body: '  ' }).success).toBe(false)
   })
 
-  it('accepts aiSuggestedTags on their own, de-duplicated', () => {
-    expect(EntryUpdateSchema.parse({ aiSuggestedTags: ['Sleep', 'sleep'] })).toEqual({
-      aiSuggestedTags: ['Sleep'],
+  describe('aiSuggestedTags', () => {
+    it('is accepted alongside tags and de-duplicated like them', () => {
+      expect(
+        EntryUpdateSchema.parse({ tags: ['Calm', 'Work'], aiSuggestedTags: ['Calm', 'calm'] }),
+      ).toEqual({ tags: ['Calm', 'Work'], aiSuggestedTags: ['Calm'] })
+    })
+
+    it('is left out of the parsed result when omitted', () => {
+      expect(EntryUpdateSchema.parse({ tags: ['Calm'] })).toEqual({ tags: ['Calm'] })
+    })
+
+    it('is accepted on its own, de-duplicated', () => {
+      expect(EntryUpdateSchema.parse({ aiSuggestedTags: ['Sleep', 'sleep'] })).toEqual({
+        aiSuggestedTags: ['Sleep'],
+      })
+    })
+
+    it('follows the same tag name rules', () => {
+      const result = EntryUpdateSchema.safeParse({
+        tags: ['Calm'],
+        aiSuggestedTags: ['x'.repeat(TAG_NAME_MAX_LENGTH + 1)],
+      })
+      expect(result.success).toBe(false)
     })
   })
 })

@@ -2,17 +2,21 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { api } from '@/src/lib/api'
+import { analysisStatus, takeQueuedEntryAnalysis } from '@/src/lib/entry-analysis'
 import { changedEntryFields, toEntryFormValues } from '@/src/lib/entry-form'
 import { formatEntryTimestamp } from '@/src/lib/timezone'
 import { typography } from '@/src/lib/typography'
 import {
   EntryIdSchema,
   EntryUpdateSchema,
+  normalizeTagName,
   type EntryUpdateOutput,
 } from '@/src/server/entry/schemas'
+import { EntryAiPanel } from './EntryAiPanel'
 import { EntryEditor } from './EntryEditor'
+import { ManageTags } from './ManageTags'
 
 const LINK_BUTTON = `rounded-xl bg-neutral-900 px-5 py-3 text-surface hover:text-surface ${typography.label}`
 
@@ -66,10 +70,26 @@ export function EditEntryEditor({ id }: { id: string }) {
   const query = api.entry.findOneEntry.useQuery({ id }, { enabled: idIsValid })
   const updateEntry = api.entry.update.useMutation()
   const deleteEntry = api.entry.delete.useMutation()
+  const analyze = api.entry.analyze.useMutation()
+  const { mutate: runAnalysis } = analyze
+  // Suggestions the user waved away. A new analysis brings new suggestions, so it starts over.
+  const [dismissedTags, setDismissedTags] = useState<string[]>([])
   // Autocomplete is a nicety: if the tag list can't load, free-text tags still work
   const tagList = api.tag.list.useQuery()
   const [isNavigating, startNavigation] = useTransition()
   const [now] = useState(() => new Date())
+
+  // Fire and forget: the analysis never blocks writing or saving, and its failure is only a note
+  const startAnalysis = useCallback(() => {
+    setDismissedTags([])
+    runAnalysis({ id })
+  }, [id, runAnalysis])
+
+  // An entry that was just created on /journal/new gets its first analysis here. Nothing has been
+  // dismissed yet, so unlike `startAnalysis` this has no state to reset.
+  useEffect(() => {
+    if (takeQueuedEntryAnalysis(id)) runAnalysis({ id })
+  }, [id, runAnalysis])
 
   const entry = query.data
   // The delete invalidates this entry's own query, which then 404s. That mustn't flash the
@@ -91,6 +111,8 @@ export function EditEntryEditor({ id }: { id: string }) {
     if (!changes) return toEntryFormValues(entry)
 
     const updated = await updateEntry.mutateAsync({ id: entry.id, ...changes })
+    // Tags and other fields don't change what the entry says, so only text edits are re-analyzed
+    if (changes.title !== undefined || changes.body !== undefined) startAnalysis()
     return toEntryFormValues(updated)
   }
 
@@ -111,6 +133,40 @@ export function EditEntryEditor({ id }: { id: string }) {
       tagSuggestions={tagList.data?.tags.map((tag) => tag.name)}
       onSave={save}
       onDelete={remove}
+      aiPanel={(editor) => {
+        const mentions = (names: string[], name: string) =>
+          names.some((existing) => normalizeTagName(existing) === normalizeTagName(name))
+        // Accepting saves the tag now (as AI_SUGGESTED) rather than waiting for the next Save
+        const acceptTag = (name: string) =>
+          updateEntry.mutate(
+            { id: entry.id, tags: [...editor.tags, name], aiSuggestedTags: [name] },
+            { onSuccess: (saved) => editor.setSavedTags(saved.tags.map((tag) => tag.name)) },
+          )
+
+        return (
+          <EntryAiPanel
+            draft={editor.draft}
+            analysis={{
+              // The fresh result wins until the refetched entry catches up
+              mood: analyze.data?.mood ?? entry.mood,
+              summary: analyze.data?.summary ?? entry.summary,
+              status: analysisStatus(analyze),
+              onAnalyze: startAnalysis,
+              suggestions: (analyze.data?.suggestedTags ?? []).filter(
+                (name) => !mentions(dismissedTags, name) && !mentions(editor.tags, name),
+              ),
+              acceptingTag: updateEntry.isPending
+                ? (updateEntry.variables?.aiSuggestedTags?.[0] ?? null)
+                : null,
+              onAcceptTag: acceptTag,
+              onDismissTag: (name) => setDismissedTags((current) => [...current, name]),
+            }}
+          />
+        )
+      }}
+      manageTags={(editor) => (
+        <ManageTags onRenamed={editor.tagRenamed} onDeleted={editor.tagDeleted} />
+      )}
       isSaving={updateEntry.isPending}
       isDeleting={isLeaving}
       error={deleteEntry.error?.message ?? updateEntry.error?.message ?? null}
