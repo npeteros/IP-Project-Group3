@@ -138,6 +138,28 @@ describe('FrameworkGallery', () => {
   })
 })
 
+describe('FrameworkGallery, deleting a framework deleted elsewhere', () => {
+  it('drops the stale card instead of offering a retry', async () => {
+    let frameworks = [DAILY_REVIEW, SUNDAY_RESET]
+    mockApi({
+      'GET /api/v1/frameworks': () => json(200, { frameworks }),
+      [`DELETE /api/v1/frameworks/${CUSTOM}`]: () => {
+        // Another tab deleted it first
+        frameworks = [DAILY_REVIEW]
+        return apiError(404, 'NOT_FOUND', 'Framework not found.')
+      },
+    })
+    renderWithClient(<FrameworkGallery />)
+    await screen.findByRole('link', { name: /Sunday Reset/ })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Sunday Reset' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete' }))
+
+    await waitFor(() => expect(screen.queryByRole('link', { name: /Sunday Reset/ })).toBeNull())
+    expect(screen.queryByText(/Couldn.t delete/)).toBeNull()
+  })
+})
+
 describe('GuidedFrameworkEntry', () => {
   it('shows not found for an id that is not a UUID, without a request', () => {
     mockApi()

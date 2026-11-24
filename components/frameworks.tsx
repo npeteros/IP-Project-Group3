@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useRef, useState, useTransition } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { api, type Framework } from '@/src/lib/api'
+import { ApiError, api, type Framework } from '@/src/lib/api'
 import {
   FRAMEWORK_BUILDER,
   FRAMEWORK_ICONS,
@@ -127,7 +127,21 @@ function DeleteFrameworkConfirmation({
   framework: Framework
   onDone: () => void
 }) {
+  const queryClient = useQueryClient()
   const remove = api.framework.delete.useMutation()
+  // Deleted elsewhere (another tab): a retry could never succeed, so it isn't offered
+  const alreadyGone = remove.error?.status === 404
+
+  async function confirm() {
+    try {
+      await remove.mutateAsync({ id: framework.id })
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 404)) return // Shown below
+      // Refetch so the stale card drops out of the gallery
+      await queryClient.invalidateQueries({ queryKey: ['framework'] })
+    }
+    onDone()
+  }
 
   return (
     <fieldset
@@ -137,12 +151,14 @@ function DeleteFrameworkConfirmation({
       <p className="text-[13px] leading-[1.45] font-medium">
         Delete “{framework.name}”? Entries you wrote with it are kept.
       </p>
-      {remove.isError && <p className={ERROR_TEXT}>Couldn’t delete this framework. Try again.</p>}
+      {remove.isError && !alreadyGone && (
+        <p className={ERROR_TEXT}>Couldn’t delete this framework. Try again.</p>
+      )}
       <div className="flex gap-2">
         <button
           type="button"
           disabled={remove.isPending}
-          onClick={() => remove.mutate({ id: framework.id }, { onSuccess: onDone })}
+          onClick={() => void confirm()}
           className="h-8 rounded-[10px] bg-amber-700 px-3.5 text-xs leading-none font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-60"
         >
           {remove.isPending ? 'Deleting…' : 'Yes, delete'}
