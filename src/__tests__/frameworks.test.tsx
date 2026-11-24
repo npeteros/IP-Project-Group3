@@ -178,11 +178,12 @@ describe('GuidedFrameworkEntry', () => {
     expect(await screen.findByRole('heading', { name: 'Framework not found' })).toBeTruthy()
   })
 
-  it('numbers each prompt with an answer field', async () => {
+  it('titles the page with the framework and numbers each prompt with an answer field', async () => {
     mockApi({ [`GET /api/v1/frameworks/${DAILY}`]: () => json(200, DAILY_REVIEW) })
     renderWithClient(<GuidedFrameworkEntry id={DAILY} />)
 
     expect(await screen.findByRole('heading', { name: 'Daily Review' })).toBeTruthy()
+    expect(document.title).toBe('Daily Review · Moodiary')
     for (const prompt of DAILY_REVIEW.prompts) {
       expect(screen.getByRole('textbox', { name: new RegExp(prompt) })).toBeTruthy()
     }

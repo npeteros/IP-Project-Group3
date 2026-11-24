@@ -4,10 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { ApiError, api, type Framework } from '@/src/lib/api'
 import {
+  APP_NAME,
   FRAMEWORK_BUILDER,
   FRAMEWORK_ICONS,
   FRAMEWORKS_PAGE,
@@ -284,6 +285,12 @@ export function FrameworkEntry({ framework }: { framework: Framework }) {
   const isSaved = createEntry.isSuccess
 
   useUnsavedChangesWarning(body !== '' && !isSaved)
+
+  // The page's metadata can't know the name (the framework loads on the client), so set it here.
+  // Next sets the next page's own title on navigation.
+  useEffect(() => {
+    document.title = `${framework.name} · ${APP_NAME}`
+  }, [framework.name])
 
   async function save() {
     const entry = await createEntry
