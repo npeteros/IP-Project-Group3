@@ -21,6 +21,11 @@ function hasTag(tags: string[], name: string) {
   return tags.some((tag) => normalizeTagName(tag) === key)
 }
 
+/** Drops later case-insensitive repeats. The first spelling wins. */
+function dedupeTagNames(tags: string[]) {
+  return tags.filter((tag, index) => !hasTag(tags.slice(0, index), tag))
+}
+
 function TagEditor({
   tags,
   onChange,
@@ -128,8 +133,11 @@ export type EntryEditorContext = {
   draft: { title: string; body: string }
   /** The tags as the form shows them right now. */
   tags: string[]
-  /** Makes `names` the saved tag set: the form shows them and no longer counts them as edited. */
-  setSavedTags: (names: string[]) => void
+  /**
+   * `name` was saved to the entry, whose saved tags are now `savedNames`. The form takes those as
+   * its saved tags and adds `name` to the tags on screen, keeping any other unsaved tag edits.
+   */
+  tagAccepted: (savedNames: string[], name: string) => void
   /** A tag was renamed elsewhere. The form follows it without counting that as an edit. */
   tagRenamed: (from: string, to: string) => void
   /** A tag was deleted elsewhere. The form drops it without counting that as an edit. */
@@ -156,6 +164,11 @@ type EntryEditorProps<S extends EntrySchema> = {
   onDelete?: () => void
   isSaving?: boolean
   isDeleting?: boolean
+  /**
+   * False keeps Save disabled while the form stays editable, e.g. while a panel is saving tags,
+   * so the two writes can't race.
+   */
+  canSave?: boolean
   /** The last save or delete failure, shown above the entry. */
   error?: string | null
 }
@@ -192,6 +205,7 @@ export function EntryEditor<S extends EntrySchema>({
   onDelete,
   isSaving = false,
   isDeleting = false,
+  canSave = true,
   error = null,
 }: EntryEditorProps<S>) {
   const formId = useId()
@@ -248,19 +262,28 @@ export function EntryEditor<S extends EntrySchema>({
    */
   function followTagChange(change: (names: string[]) => string[]) {
     const saved = (defaultValues?.tags ?? []).filter((name): name is string => name !== undefined)
-    // Read what's on screen first: `resetField` replaces it with the saved tags
-    const shown = change(getValues('tags'))
-    resetField('tags', { defaultValue: change(saved) })
+    setSavedAndShownTags(change(saved), change(getValues('tags')))
+  }
+
+  function setSavedAndShownTags(saved: string[], shown: string[]) {
+    // `shown` must be read before this runs: `resetField` replaces the tags with the saved ones
+    resetField('tags', { defaultValue: saved })
     setValue('tags', shown, { shouldDirty: true })
   }
 
   const context: EntryEditorContext = {
     draft: { title: title ?? '', body: body ?? '' },
     tags,
-    setSavedTags: (names) => resetField('tags', { defaultValue: names }),
+    tagAccepted: (savedNames, name) => {
+      const shown = getValues('tags')
+      setSavedAndShownTags(savedNames, hasTag(shown, name) ? shown : [...shown, name])
+    },
+    // Renaming onto a name the entry already has (e.g. an unsaved tag) would show it twice
     tagRenamed: (from, to) =>
       followTagChange((names) =>
-        names.map((name) => (normalizeTagName(name) === normalizeTagName(from) ? to : name)),
+        dedupeTagNames(
+          names.map((name) => (normalizeTagName(name) === normalizeTagName(from) ? to : name)),
+        ),
       ),
     tagDeleted: (name) =>
       followTagChange((names) =>
@@ -293,7 +316,7 @@ export function EntryEditor<S extends EntrySchema>({
         <button
           type="submit"
           form={formId}
-          disabled={busy}
+          disabled={busy || !canSave}
           aria-busy={isSaving}
           className="text-[15px] leading-none font-bold text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60 lg:rounded-[11px] lg:bg-neutral-900 lg:px-[22px] lg:py-2.5 lg:text-sm lg:font-semibold lg:text-surface lg:hover:bg-neutral-900/90"
         >

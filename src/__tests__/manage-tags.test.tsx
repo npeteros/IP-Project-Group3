@@ -371,6 +371,49 @@ describe('ManageTags: deleting', () => {
     await waitFor(() => expect(screen.queryByRole('group')).toBeNull())
   })
 
+  it('still tells the editor when the refreshed list drops the tag before the delete settles', async () => {
+    // In the editor the entry query is open too. The delete waits for it to refetch, and the tag
+    // list can refresh first, unmounting the confirmation. A callback tied to the component would
+    // then be skipped, leaving the tag in the editor for the next Save to create again.
+    const ENTRY_ID = '9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d'
+    let deleted = false
+    let releaseEntry: (response: Response) => void = () => {}
+    mockApi({
+      'GET /api/v1/tags': () =>
+        json(200, { tags: deleted ? TAGS.filter((tag) => tag.id !== WORK) : TAGS }),
+      [`GET /api/v1/entries/${ENTRY_ID}`]: () =>
+        deleted
+          ? new Promise<Response>((resolve) => (releaseEntry = resolve))
+          : json(200, { id: ENTRY_ID }),
+      [`DELETE /api/v1/tags/${WORK}`]: () => {
+        deleted = true
+        return json(204)
+      },
+    })
+    function OpenEntry() {
+      api.entry.findOneEntry.useQuery({ id: ENTRY_ID })
+      return null
+    }
+    const onDeleted = vi.fn()
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <OpenEntry />
+        <ManageTags onRenamed={vi.fn()} onDeleted={onDeleted} />
+      </QueryClientProvider>,
+    )
+    await waitFor(() => expect(requests(`GET /api/v1/entries/${ENTRY_ID}`)).toHaveLength(1))
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete tag Work' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete' }))
+
+    await waitFor(() => expect(screen.queryByText('Work')).toBeNull())
+    releaseEntry(json(200, { id: ENTRY_ID }))
+    await waitFor(() => expect(onDeleted).toHaveBeenCalledWith('Work'))
+  })
+
   it('refreshes the tag list and the entries after deleting', async () => {
     mockApi({ [`DELETE /api/v1/tags/${WORK}`]: () => json(204) })
     const { queryClient } = renderTags()

@@ -18,6 +18,8 @@ export type EntryAnalysisView = {
   suggestions: string[]
   /** The suggestion being saved right now, if any. */
   acceptingTag: string | null
+  /** True while the entry is being written (a save or an accept), so a chip can't start another. */
+  suggestionsLocked: boolean
   onAcceptTag: (name: string) => void
   onDismissTag: (name: string) => void
 }
@@ -95,7 +97,7 @@ function SuggestedTags({ analysis }: { analysis: EntryAnalysisView }) {
             >
               <button
                 type="button"
-                disabled={analysis.acceptingTag !== null}
+                disabled={analysis.suggestionsLocked}
                 onClick={() => analysis.onAcceptTag(tag)}
                 aria-label={`Add suggested tag ${tag}`}
                 className="flex items-center gap-[5px] py-1.5 pr-1 pl-[11px] disabled:cursor-not-allowed disabled:opacity-60"
@@ -105,7 +107,7 @@ function SuggestedTags({ analysis }: { analysis: EntryAnalysisView }) {
               </button>
               <button
                 type="button"
-                disabled={analysis.acceptingTag !== null}
+                disabled={analysis.suggestionsLocked}
                 onClick={() => analysis.onDismissTag(tag)}
                 aria-label={`Dismiss suggested tag ${tag}`}
                 className="rounded-full p-1.5 pr-2 text-sage-700/70 hover:text-sage-700 disabled:cursor-not-allowed disabled:opacity-60"
@@ -128,15 +130,18 @@ function SuggestedTags({ analysis }: { analysis: EntryAnalysisView }) {
 export function EntryAiPanel({
   draft,
   analysis,
+  conversationId,
 }: {
   draft: { title: string; body: string }
   analysis?: EntryAnalysisView
+  /** Keys the Companion's conversation so it can follow the entry to another page. */
+  conversationId?: string
 }) {
   return (
     <>
       <AnalysisCard analysis={analysis} />
       {analysis && <SuggestedTags analysis={analysis} />}
-      <CompanionChat draft={draft} />
+      <CompanionChat draft={draft} conversationId={conversationId} />
     </>
   )
 }

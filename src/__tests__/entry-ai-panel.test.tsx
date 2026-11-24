@@ -21,6 +21,7 @@ function analysis(overrides: Partial<EntryAnalysisView> = {}): EntryAnalysisView
     onAnalyze: vi.fn(),
     suggestions: [],
     acceptingTag: null,
+    suggestionsLocked: false,
     onAcceptTag: vi.fn(),
     onDismissTag: vi.fn(),
     ...overrides,
@@ -178,9 +179,24 @@ describe('EntryAiPanel: suggested tags', () => {
   })
 
   it('shows the chip being saved and disables the others until it finishes', () => {
-    renderPanel(analysis({ suggestions: ['Morning', 'Rest'], acceptingTag: 'Morning' }))
+    renderPanel(
+      analysis({
+        suggestions: ['Morning', 'Rest'],
+        acceptingTag: 'Morning',
+        suggestionsLocked: true,
+      }),
+    )
 
     expect(screen.getByText('Adding…')).toBeTruthy()
+    for (const button of screen.getAllByRole('button', { name: /suggested tag/ })) {
+      expect((button as HTMLButtonElement).disabled).toBe(true)
+    }
+  })
+
+  it('disables the chips while the entry is being saved, with none shown as adding', () => {
+    renderPanel(analysis({ suggestions: ['Morning', 'Rest'], suggestionsLocked: true }))
+
+    expect(screen.queryByText('Adding…')).toBeNull()
     for (const button of screen.getAllByRole('button', { name: /suggested tag/ })) {
       expect((button as HTMLButtonElement).disabled).toBe(true)
     }

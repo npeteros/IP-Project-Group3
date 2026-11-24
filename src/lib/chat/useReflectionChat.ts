@@ -131,8 +131,13 @@ async function consumeUiMessageStream(
 
 export function useReflectionChat({
   entryDraft,
-}: { entryDraft?: ChatRequestInput['entryDraft'] } = {}) {
-  const [messages, setMessages] = useState<ReflectionChatMessage[]>([])
+  initialMessages,
+}: {
+  entryDraft?: ChatRequestInput['entryDraft']
+  /** Where the conversation starts, e.g. one carried over from another page. Read on mount only. */
+  initialMessages?: () => ReflectionChatMessage[]
+} = {}) {
+  const [messages, setMessages] = useState<ReflectionChatMessage[]>(initialMessages ?? [])
   const [status, setStatus] = useState<ChatStatus>('ready')
   const controllerRef = useRef<AbortController | null>(null)
   const activeAssistantIdRef = useRef<string | null>(null)

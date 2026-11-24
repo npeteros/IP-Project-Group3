@@ -163,6 +163,7 @@ describe('EntryService.createEntry', () => {
       { entryId: 'e1', tagId: 'id-work', source: 'MANUAL' },
       { entryId: 'e1', tagId: 'id-home', source: 'MANUAL' },
     ])
+    expect(tx.entryTag.createMany.mock.calls[0][0].skipDuplicates).toBe(true)
   })
 
   it('returns the EntrySchema response shape', async () => {

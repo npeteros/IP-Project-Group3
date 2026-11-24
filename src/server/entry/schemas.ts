@@ -164,18 +164,22 @@ export const EntryTagSchema = z.object({
   name: z.string(),
 })
 
-export const EntryAnalysisSchema = z.object({
-  mood: MoodSchema,
-  summary: z
-    .string()
-    .trim()
-    .min(1, 'Summary cannot be empty.')
-    .max(
-      ENTRY_SUMMARY_MAX_LENGTH,
-      `Summary can be at most ${ENTRY_SUMMARY_MAX_LENGTH} characters.`,
-    ),
-  suggestedTags: tags,
-})
+/** `POST /api/v1/entries/:id/analysis` response. `suggestedTags` are not stored. */
+export const EntryAnalysisSchema = z
+  .object({
+    mood: MoodSchema,
+    summary: z
+      .string()
+      .trim()
+      .min(1, 'Summary cannot be empty.')
+      .max(
+        ENTRY_SUMMARY_MAX_LENGTH,
+        `Summary can be at most ${ENTRY_SUMMARY_MAX_LENGTH} characters.`,
+      ),
+    // `.overwrite` rather than `tags`' transform, so it can document a response
+    suggestedTags: z.array(tagName).max(TAGS_PER_ENTRY_MAX).overwrite(dedupeTags),
+  })
+  .meta({ id: 'EntryAnalysis' })
 
 export type EntryAnalysis = z.infer<typeof EntryAnalysisSchema>
 

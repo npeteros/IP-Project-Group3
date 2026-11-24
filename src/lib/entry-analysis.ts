@@ -30,13 +30,22 @@ export function analysisStatus({
 
 // A new entry is saved on /journal/new but its analysis belongs on /journal/[id], which is a
 // different page. The new-entry page queues the id here and the entry page starts the analysis.
-const queued = new Set<string>()
+// Only the latest entry is kept, and only briefly: an entry whose page never opened (the user went
+// elsewhere first) must not start an analysis, and spend AI quota, later in the session.
+const QUEUED_ANALYSIS_TTL_MS = 30_000
+
+let queued: { id: string; at: number } | null = null
 
 export function queueEntryAnalysis(id: string) {
-  queued.add(id)
+  queued = { id, at: Date.now() }
 }
 
-/** True once for a queued id, so the analysis starts exactly once. */
+/**
+ * True once for the queued id, if it was queued within the last 30 seconds, so the analysis
+ * starts exactly once. Opening any entry clears the queue.
+ */
 export function takeQueuedEntryAnalysis(id: string) {
-  return queued.delete(id)
+  const entry = queued
+  queued = null
+  return entry?.id === id && Date.now() - entry.at <= QUEUED_ANALYSIS_TTL_MS
 }

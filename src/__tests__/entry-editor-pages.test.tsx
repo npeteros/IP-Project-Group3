@@ -7,7 +7,7 @@ import { NewEntryEditor } from '@/components/NewEntryEditor'
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
 import { api } from '@/src/lib/api'
 import { queueEntryAnalysis, takeQueuedEntryAnalysis } from '@/src/lib/entry-analysis'
-import type { Entry } from '@/src/server/entry/schemas'
+import { TAGS_PER_ENTRY_MAX, type Entry } from '@/src/server/entry/schemas'
 
 const push = vi.hoisted(() => vi.fn())
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
@@ -676,7 +676,7 @@ describe('EditEntryEditor', () => {
 describe('AI panel in the editor', () => {
   const GET = `GET /api/v1/entries/${ID}`
   const PATCH = `PATCH /api/v1/entries/${ID}`
-  const ANALYZE = `POST /api/v1/entries/${ID}/analyze`
+  const ANALYZE = `POST /api/v1/entries/${ID}/analysis`
   const ANALYSIS = {
     mood: 'CALM',
     summary: 'A quiet morning with no rush.',
@@ -1025,21 +1025,32 @@ describe('AI panel in the editor', () => {
       expect(beforeUnload().defaultPrevented).toBe(true)
     })
 
-    it('sends the tags as the form shows them, including ones typed but not yet saved', async () => {
+    it('sends the saved tags plus the suggestion: tags typed but not saved stay unsaved', async () => {
+      const accepted = {
+        ...ENTRY,
+        body: 'Edited',
+        tags: [...ENTRY.tags, { id: '16fd2706-8baf-433b-82eb-8c7fada847da', name: 'Morning' }],
+      }
       await withSuggestions()
       addTag('Work')
-      mockApi({
-        [GET]: () => json(200, ENTRY),
-        [PATCH]: () => json(200, { ...ENTRY, tags: ENTRY.tags }),
-      })
+      mockApi({ [GET]: () => json(200, accepted), [PATCH]: () => json(200, accepted) })
 
       fireEvent.click(panel().getByRole('button', { name: 'Add suggested tag Morning' }))
 
       await waitFor(() => expect(patchCount()).toBe(2))
       expect(lastPatch()).toEqual({
-        tags: ['Gratitude', 'Work', 'Morning'],
+        tags: ['Gratitude', 'Morning'],
         aiSuggestedTags: ['Morning'],
       })
+      // `Work` is still on screen, and still an unsaved edit
+      await waitFor(() =>
+        expect(
+          within(screen.getByRole('list', { name: 'Tags' }))
+            .getAllByRole('listitem')
+            .map((item) => item.textContent),
+        ).toEqual(['Gratitude', 'Work', 'Morning', 'Add tag']),
+      )
+      expect(beforeUnload().defaultPrevented).toBe(true)
     })
 
     it('shows a failed accept in the editor alert and keeps the suggestion', async () => {
@@ -1052,7 +1063,7 @@ describe('AI panel in the editor', () => {
       fireEvent.click(panel().getByRole('button', { name: 'Add suggested tag Morning' }))
 
       expect((await screen.findByRole('alert')).textContent).toBe(
-        'An entry can have at most 20 tags.',
+        'Couldn’t add “Morning”: An entry can have at most 20 tags.',
       )
       expect(chipNames()).toEqual(['Morning', 'Rest'])
     })
@@ -1073,8 +1084,54 @@ describe('AI panel in the editor', () => {
           .disabled,
       ).toBe(true)
       expect(saveButton().disabled).toBe(true)
+      // Only Save waits: the entry itself stays editable
+      expect(bodyField().readOnly).toBe(false)
+      expect(titleField().readOnly).toBe(false)
       respond(json(200, ENTRY))
       await waitFor(() => expect(saveButton().disabled).toBe(false))
+    })
+
+    it('locks the suggestions while the entry is being saved', async () => {
+      await withSuggestions()
+      let respond: (response: Response) => void = () => {}
+      mockApi({
+        [GET]: () => json(200, { ...ENTRY, body: 'Edited' }),
+        [PATCH]: () => new Promise<Response>((resolve) => (respond = resolve)),
+        [ANALYZE]: () => json(200, ANALYSIS),
+      })
+
+      fireEvent.change(bodyField(), { target: { value: 'Edited more' } })
+      fireEvent.click(saveButton())
+
+      await waitFor(() => expect(saveButton().textContent).toBe('Saving…'))
+      for (const name of ['Add suggested tag Morning', 'Dismiss suggested tag Rest']) {
+        expect((panel().getByRole('button', { name }) as HTMLButtonElement).disabled).toBe(true)
+      }
+      expect(panel().queryByText('Adding…')).toBeNull()
+      respond(json(200, { ...ENTRY, body: 'Edited more' }))
+      await waitFor(() => expect(saveButton().disabled).toBe(false))
+    })
+
+    it('offers no suggestions once the entry has the most tags it can have', async () => {
+      const full = {
+        ...ENTRY,
+        tags: Array.from({ length: TAGS_PER_ENTRY_MAX }, (_, i) => ({
+          id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+          name: `Tag ${i}`,
+        })),
+      }
+      mockApi({
+        [GET]: () => json(200, full),
+        [PATCH]: () => json(200, { ...full, body: 'Edited' }),
+        [ANALYZE]: () => json(200, ANALYSIS),
+      })
+      renderEdit()
+      await loaded()
+      fireEvent.change(bodyField(), { target: { value: 'Edited' } })
+      fireEvent.click(saveButton())
+
+      await panel().findByText('Calm mood detected')
+      expect(panel().queryByRole('list', { name: 'Suggested tags' })).toBeNull()
     })
 
     it('hides a dismissed suggestion without saving anything', async () => {
@@ -1215,6 +1272,41 @@ describe('Companion in the editor', () => {
 
     expect(screen.queryByRole('log', { name: 'Conversation' })).toBeNull()
     expect(screen.queryByText('An answer.')).toBeNull()
+  })
+
+  it('keeps the conversation when a new entry is saved and opens at its own page', async () => {
+    const created: Entry = { ...ENTRY, title: null, body: 'Quiet start' }
+    mockApi({
+      [CHAT]: () => reply('Start with how it felt.'),
+      'POST /api/v1/entries': () => json(201, created),
+    })
+    const first = renderWithClient(<NewEntryEditor dateLabel="Today, Aug 25 · 8:14 AM" />)
+    fireEvent.change(bodyField(), { target: { value: 'Quiet start' } })
+    ask('Where do I begin?')
+    await companion().findByText('Start with how it felt.')
+
+    fireEvent.click(saveButton())
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/journal/${ID}`))
+    // The router would now swap /journal/new for the entry's page
+    cleanup()
+    mockApi({ [GET]: () => json(200, created) })
+    renderWithClient(<EditEntryEditor id={ID} />, first)
+    await screen.findByRole('textbox', { name: 'Entry' })
+
+    expect(companion().getByText('Where do I begin?')).toBeTruthy()
+    expect(companion().getByText('Start with how it felt.')).toBeTruthy()
+  })
+
+  it('starts /journal/new fresh after leaving it without saving', async () => {
+    mockApi({ [CHAT]: () => reply('An answer.') })
+    const first = renderWithClient(<NewEntryEditor dateLabel="Today, Aug 25 · 8:14 AM" />)
+    ask('Question')
+    await companion().findByText('An answer.')
+    cleanup()
+
+    renderWithClient(<NewEntryEditor dateLabel="Today, Aug 25 · 8:14 AM" />, first)
+
+    expect(screen.queryByRole('log', { name: 'Conversation' })).toBeNull()
   })
 
   it('also answers about a draft that has not been saved yet, on /journal/new', async () => {

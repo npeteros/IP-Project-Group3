@@ -1,6 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  clearConversation,
+  readConversation,
+  storeConversation,
+} from '@/src/lib/chat/companionConversations'
 import { toEntryDraft } from '@/src/lib/chat/toEntryDraft'
 import { useReflectionChat } from '@/src/lib/chat/useReflectionChat'
 import { AI_PANEL } from '@/src/lib/constants'
@@ -11,16 +16,37 @@ const QUIET_TEXT = 'text-xs leading-[1.5] text-neutral-600'
 
 /**
  * Chat with the reflection agent about the entry being written, through the same hook as the
- * /chat page so a rate limit or error reads the same in both. The conversation is session only:
- * it lives in the hook's state and is gone when the user leaves the entry. The agent is sent the
- * title and body as they are right now, so it can answer about unsaved text too.
+ * /chat page so a rate limit or error reads the same in both. The conversation is session only
+ * and is gone when the user leaves the entry. With a `conversationId` it is kept in
+ * `companionConversations` while this is mounted, so a caller can carry it over to another page
+ * (the first save on /journal/new). The agent is sent the title and body as they are right now,
+ * so it can answer about unsaved text too.
  */
-export function CompanionChat({ draft }: { draft: { title: string; body: string } }) {
+export function CompanionChat({
+  draft,
+  conversationId,
+}: {
+  draft: { title: string; body: string }
+  conversationId?: string
+}) {
   const { title, body } = draft
   const entryDraft = useMemo(() => toEntryDraft({ title, body }), [title, body])
-  const { messages, status, sendMessage, retryMessage } = useReflectionChat({ entryDraft })
+  const { messages, status, sendMessage, retryMessage } = useReflectionChat({
+    entryDraft,
+    initialMessages: () => (conversationId ? readConversation(conversationId) : []),
+  })
   const [text, setText] = useState('')
   const busy = status !== 'ready'
+
+  useEffect(() => {
+    if (conversationId) storeConversation(conversationId, messages, { replying: busy })
+  }, [conversationId, messages, busy])
+
+  // Leaving the entry ends the conversation. A caller that moved it to another key first keeps it.
+  useEffect(() => {
+    if (!conversationId) return
+    return () => clearConversation(conversationId)
+  }, [conversationId])
 
   function submit(event: React.SyntheticEvent) {
     event.preventDefault()

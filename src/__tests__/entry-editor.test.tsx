@@ -28,6 +28,7 @@ type EditorOptions = {
   manageTags?: (context: EntryEditorContext) => ReactNode
   isSaving?: boolean
   isDeleting?: boolean
+  canSave?: boolean
   error?: string | null
 }
 
@@ -113,7 +114,9 @@ describe('EntryEditor panels', () => {
       <div>
         <output aria-label="draft">{JSON.stringify(context.draft)}</output>
         <output aria-label="tags">{JSON.stringify(context.tags)}</output>
-        <button onClick={() => context.setSavedTags(['Saved', 'Tags'])}>set saved</button>
+        <button onClick={() => context.tagAccepted(['Gratitude', 'Morning'], 'Morning')}>
+          accept
+        </button>
         <button onClick={() => context.tagRenamed('gratitude', 'Thankful')}>rename</button>
         <button onClick={() => context.tagDeleted('GRATITUDE')}>delete</button>
       </div>
@@ -178,28 +181,38 @@ describe('EntryEditor panels', () => {
     await waitFor(() => expect(read('tags')).toEqual(['Gratitude', 'Work']))
   })
 
-  it('setSavedTags shows the saved tags and leaves the form unedited', async () => {
+  it('tagAccepted adds the tag without counting it as an edit', async () => {
     renderEditor({ aiPanel: probe })
-    addTag('Work')
-    await waitFor(() => expect(beforeUnload().defaultPrevented).toBe(true))
 
-    fireEvent.click(screen.getByRole('button', { name: 'set saved' }))
+    fireEvent.click(screen.getByRole('button', { name: 'accept' }))
 
-    await waitFor(() => expect(tagNames()).toEqual(['Saved', 'Tags']))
+    await waitFor(() => expect(tagNames()).toEqual(['Gratitude', 'Morning']))
     expect(beforeUnload().defaultPrevented).toBe(false)
   })
 
-  it('setSavedTags still works after the form has been saved once', async () => {
-    // `reset` after a save unregisters every field, which once left setSavedTags doing nothing
+  it('tagAccepted keeps unsaved tag edits unsaved', async () => {
+    renderEditor({ aiPanel: probe })
+    addTag('Work')
+
+    fireEvent.click(screen.getByRole('button', { name: 'accept' }))
+
+    await waitFor(() => expect(tagNames()).toEqual(['Gratitude', 'Work', 'Morning']))
+    // `Work` is still only on screen
+    expect(beforeUnload().defaultPrevented).toBe(true)
+  })
+
+  it('tagAccepted still works after the form has been saved once', async () => {
+    // `reset` after a save unregisters every field, which once left the saved tags unchanged
     const saved: EntryFormValues = { title: 'Saved title', body: 'Saved body', tags: ['Gratitude'] }
     renderEditor({ aiPanel: probe, onSave: vi.fn(async () => saved) })
     fireEvent.change(bodyField(), { target: { value: 'Edited' } })
     fireEvent.click(saveButton())
     await waitFor(() => expect(bodyField().value).toBe('Saved body'))
 
-    fireEvent.click(screen.getByRole('button', { name: 'set saved' }))
+    fireEvent.click(screen.getByRole('button', { name: 'accept' }))
 
-    await waitFor(() => expect(tagNames()).toEqual(['Saved', 'Tags']))
+    await waitFor(() => expect(tagNames()).toEqual(['Gratitude', 'Morning']))
+    expect(beforeUnload().defaultPrevented).toBe(false)
   })
 
   it('renaming a tag still works after the form has been saved once', async () => {
@@ -215,15 +228,24 @@ describe('EntryEditor panels', () => {
     expect(beforeUnload().defaultPrevented).toBe(false)
   })
 
-  it('setSavedTags does not discard other unsaved edits', async () => {
+  it('tagAccepted does not discard other unsaved edits', async () => {
     renderEditor({ aiPanel: probe })
     fireEvent.change(titleField(), { target: { value: 'Edited title' } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'set saved' }))
+    fireEvent.click(screen.getByRole('button', { name: 'accept' }))
 
-    await waitFor(() => expect(tagNames()).toEqual(['Saved', 'Tags']))
+    await waitFor(() => expect(tagNames()).toEqual(['Gratitude', 'Morning']))
     expect(titleField().value).toBe('Edited title')
     expect(beforeUnload().defaultPrevented).toBe(true)
+  })
+
+  it('shows a tag once when it is renamed to a name already on the entry', async () => {
+    renderEditor({ aiPanel: probe })
+    addTag('Thankful')
+
+    fireEvent.click(screen.getByRole('button', { name: 'rename' }))
+
+    await waitFor(() => expect(tagNames()).toEqual(['Thankful']))
   })
 
   it('follows a renamed tag without counting it as an edit', async () => {
@@ -438,6 +460,17 @@ describe('EntryEditor pending and error states', () => {
     expect(titleField().readOnly).toBe(true)
     expect((screen.getByRole('button', { name: 'Add tag' }) as HTMLButtonElement).disabled).toBe(
       true,
+    )
+  })
+
+  it('disables only Save when canSave is false, keeping the fields editable', () => {
+    renderEditor({ canSave: false })
+
+    expect((saveButton() as HTMLButtonElement).disabled).toBe(true)
+    expect(bodyField().readOnly).toBe(false)
+    expect(titleField().readOnly).toBe(false)
+    expect((screen.getByRole('button', { name: 'Add tag' }) as HTMLButtonElement).disabled).toBe(
+      false,
     )
   })
 
