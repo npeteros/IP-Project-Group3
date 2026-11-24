@@ -436,8 +436,13 @@ export function FrameworkBuilder() {
   const isSaving = createFramework.isPending || isNavigating
   const isSaved = createFramework.isSuccess
   const atLimit = prompts.length >= FRAMEWORK_BUILDER.maxPrompts
+  const hasDraft = draft.trim() !== ''
   const canSave =
-    name.trim() !== '' && description.trim() !== '' && prompts.length > 0 && !isSaving && !isSaved
+    name.trim() !== '' &&
+    description.trim() !== '' &&
+    (prompts.length > 0 || hasDraft) &&
+    !isSaving &&
+    !isSaved
 
   useUnsavedChangesWarning((isDirty || draft.trim() !== '') && !isSaved)
 
@@ -463,6 +468,13 @@ export function FrameworkBuilder() {
     startNavigation(() => router.push('/frameworks'))
   })
 
+  function save() {
+    // A prompt typed but not yet added is part of the framework too. `setValue` updates the form
+    // synchronously, so the submit below validates and sends it with the rest.
+    if (hasDraft && !atLimit) addDraft()
+    void submit()
+  }
+
   // Blank prompts can't be added, so only list-level errors (none, or too many) can occur
   const promptsError = errors.prompts?.message ?? errors.prompts?.root?.message
 
@@ -473,12 +485,15 @@ export function FrameworkBuilder() {
         saveLabel={isSaving ? 'Saving…' : 'Save framework'}
         mobileSaveLabel={isSaving ? 'Saving…' : 'Save'}
         canSave={canSave}
-        onSave={() => void submit()}
+        onSave={save}
       />
 
       <form
         noValidate
-        onSubmit={(event) => void submit(event)}
+        onSubmit={(event) => {
+          event.preventDefault()
+          save()
+        }}
         className="mx-auto flex w-full max-w-[660px] flex-col gap-4 px-5 pt-1 pb-16 lg:gap-5 lg:px-0 lg:pt-6"
       >
         <h1 className={`${typography.pageTitle} hidden lg:block`}>{FRAMEWORK_BUILDER.title}</h1>

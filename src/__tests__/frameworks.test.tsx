@@ -292,6 +292,34 @@ describe('FrameworkBuilder', () => {
     })
   })
 
+  it('saves a prompt that was typed but not added yet', async () => {
+    mockApi({ 'POST /api/v1/frameworks': () => json(201, SUNDAY_RESET) })
+    renderWithClient(<FrameworkBuilder />)
+    fillIn('Sunday Reset', 'Close out the week')
+    addPrompt('What am I proud of?')
+    fireEvent.change(screen.getByRole('textbox', { name: 'New prompt' }), {
+      target: { value: ' What do I want next week? ' },
+    })
+    fireEvent.click(saveButton())
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/frameworks'))
+    expect(bodyOf('POST /api/v1/frameworks').prompts).toEqual([
+      'What am I proud of?',
+      'What do I want next week?',
+    ])
+  })
+
+  it('can save with only a typed prompt', () => {
+    mockApi()
+    renderWithClient(<FrameworkBuilder />)
+    fillIn('Sunday Reset', 'Close out the week')
+    expect(saveButton().disabled).toBe(true)
+    fireEvent.change(screen.getByRole('textbox', { name: 'New prompt' }), {
+      target: { value: 'What am I proud of?' },
+    })
+    expect(saveButton().disabled).toBe(false)
+  })
+
   it('shows a failed save', async () => {
     mockApi({
       'POST /api/v1/frameworks': () => apiError(500, 'INTERNAL_ERROR', 'Something went wrong.'),
