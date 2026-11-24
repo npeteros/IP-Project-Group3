@@ -1,15 +1,8 @@
 import type { Prisma, PrismaClient } from '@/src/generated/prisma/client'
-import { EntryTagSource } from '@/src/generated/prisma/enums'
 import prisma from '@/src/lib/prisma'
 import { calendarDateToDbDate, dbDateToCalendarDate, toCalendarDate } from '@/src/lib/timezone'
+import { ConflictError, isUniqueViolation, NotFoundError } from '@/src/server/api/errors'
 import {
-  BadRequestError,
-  ConflictError,
-  isUniqueViolation,
-  NotFoundError,
-} from '@/src/server/api/errors'
-import {
-  TAGS_PER_ENTRY_MAX,
   normalizeTagName,
   type Entry,
   type EntryCreateOutput,
@@ -139,7 +132,7 @@ export class EntryService {
         },
       })
 
-      await this.syncTags(tx, entry.id, { tags: input.tags })
+      await this.syncTags(tx, entry.id, input.tags)
       return this.readEntry(tx, entry.id)
     })
   }
@@ -163,8 +156,8 @@ export class EntryService {
       })
       if (count === 0) throw new NotFoundError('Entry not found.')
 
-      if (input.tags !== undefined || input.aiSuggestedTags !== undefined) {
-        await this.syncTags(tx, id, { tags: input.tags, aiSuggestedTags: input.aiSuggestedTags })
+      if (input.tags !== undefined) {
+        await this.syncTags(tx, id, input.tags, input.aiSuggestedTags)
       }
       return this.readEntry(tx, id)
     })
@@ -195,54 +188,22 @@ export class EntryService {
   }
 
   /**
-   * Updates the entry's tag links. When `tags` is given the entry's tag set becomes exactly
-   * `tags` plus `aiSuggestedTags`, and other links are removed; otherwise `aiSuggestedTags` are
-   * added to the current links. Newly linked `aiSuggestedTags` are marked `AI_SUGGESTED`, other
-   * new links `MANUAL`, and existing links keep their source. Shared by create and update.
+   * Makes the entry's tag set exactly `names`: finds or creates each tag for this
+   * user (matched on `normalizedName`), links the ones that aren't linked yet, and
+   * unlinks the rest. Shared by create and update.
+   *
+   * Links created here are MANUAL, except for tags named in `aiSuggested`, which are stored as
+   * AI_SUGGESTED. A tag that was already linked keeps the source it had.
    */
   private async syncTags(
     tx: Prisma.TransactionClient,
     entryId: string,
-    { tags, aiSuggestedTags = [] }: { tags?: string[]; aiSuggestedTags?: string[] },
+    names: string[],
+    aiSuggested: string[] = [],
   ) {
-    const manualTagIds = await this.upsertTags(tx, tags ?? [])
-    const aiTagIds = new Set(await this.upsertTags(tx, aiSuggestedTags))
+    const aiNames = new Set(aiSuggested.map(normalizeTagName))
 
-    const baseTagIds =
-      tags === undefined
-        ? (await tx.entryTag.findMany({ where: { entryId }, select: { tagId: true } })).map(
-            (link) => link.tagId,
-          )
-        : manualTagIds
-    const tagIds = [...new Set([...baseTagIds, ...aiTagIds])]
-    // Throwing rolls back the whole write, including any tags created above
-    if (tagIds.length > TAGS_PER_ENTRY_MAX) {
-      throw new BadRequestError(`An entry can have at most ${TAGS_PER_ENTRY_MAX} tags.`)
-    }
-
-    // Unlinking removes the join row only; the tag itself is untouched
-    if (tags !== undefined) {
-      await tx.entryTag.deleteMany({ where: { entryId, tagId: { notIn: tagIds } } })
-    }
-    if (tagIds.length > 0) {
-      // `skipDuplicates` leaves existing links, and their source, as they are
-      await tx.entryTag.createMany({
-        data: tagIds.map((tagId) => ({
-          entryId,
-          tagId,
-          source: aiTagIds.has(tagId) ? EntryTagSource.AI_SUGGESTED : EntryTagSource.MANUAL,
-        })),
-        skipDuplicates: true,
-      })
-    }
-  }
-
-  /**
-   * Finds or creates each named tag for this user (matched on `normalizedName`) and returns
-   * their ids, de-duplicated in order. The first spelling wins.
-   */
-  private async upsertTags(tx: Prisma.TransactionClient, names: string[]) {
-    // The schema already de-duplicates; this guards direct callers.
+    // The schema already de-duplicates; this guards direct callers. The first spelling wins.
     const byNormalized = new Map<string, string>()
     for (const raw of names) {
       const name = raw.trim()
@@ -251,7 +212,7 @@ export class EntryService {
         byNormalized.set(normalizedName, name)
     }
 
-    const tagIds: string[] = []
+    const links: { tagId: string; source: 'MANUAL' | 'AI_SUGGESTED' }[] = []
     for (const [normalizedName, name] of byNormalized) {
       // Update is empty on purpose: an existing tag keeps the spelling it was created with.
       // Deleted tags are gone (hard delete), so a re-used name always creates a new tag.
@@ -261,9 +222,18 @@ export class EntryService {
         update: {},
         select: { id: true },
       })
-      tagIds.push(tag.id)
+      links.push({ tagId: tag.id, source: aiNames.has(normalizedName) ? 'AI_SUGGESTED' : 'MANUAL' })
     }
-    return tagIds
+    const tagIds = links.map((link) => link.tagId)
+
+    // Unlinking removes the join row only; the tag itself is untouched
+    await tx.entryTag.deleteMany({ where: { entryId, tagId: { notIn: tagIds } } })
+    if (tagIds.length > 0) {
+      await tx.entryTag.createMany({
+        data: links.map(({ tagId, source }) => ({ entryId, tagId, source })),
+        skipDuplicates: true,
+      })
+    }
   }
 
   private async readEntry(

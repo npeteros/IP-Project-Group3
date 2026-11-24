@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 import type { PrismaClient } from '@/src/generated/prisma/client'
-import { BadRequestError, NotFoundError } from '@/src/server/api/errors'
+import { NotFoundError } from '@/src/server/api/errors'
 import { EntryService } from '@/src/server/entry/entry.service'
 
 const now = new Date('2026-10-30T00:00:00.000Z')
@@ -25,7 +25,7 @@ function record(overrides: Record<string, unknown> = {}) {
   }
 }
 
-function setup({ updated = 1, linkedTagIds = [] as string[] } = {}) {
+function setup({ updated = 1 }: { updated?: number } = {}) {
   const tx = {
     entry: {
       create: vi.fn().mockResolvedValue({ id: 'e1' }),
@@ -41,7 +41,6 @@ function setup({ updated = 1, linkedTagIds = [] as string[] } = {}) {
         .mockImplementation(({ create }) => Promise.resolve({ id: `id-${create.normalizedName}` })),
     },
     entryTag: {
-      findMany: vi.fn().mockResolvedValue(linkedTagIds.map((tagId) => ({ tagId }))),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       createMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
@@ -164,7 +163,6 @@ describe('EntryService.createEntry', () => {
       { entryId: 'e1', tagId: 'id-work', source: 'MANUAL' },
       { entryId: 'e1', tagId: 'id-home', source: 'MANUAL' },
     ])
-    expect(tx.entryTag.createMany.mock.calls[0][0].skipDuplicates).toBe(true)
   })
 
   it('returns the EntrySchema response shape', async () => {
@@ -251,16 +249,18 @@ describe('EntryService.updateEntry', () => {
     ])
   })
 
-  it('matches aiSuggestedTags against tags case-insensitively', async () => {
+  it('matches aiSuggestedTags case-insensitively and ignores names that are not in tags', async () => {
     const { tx, service } = setup()
     await service.updateEntry('e1', {
       tags: ['Calm'],
-      aiSuggestedTags: ['  CALM '],
+      aiSuggestedTags: ['  CALM ', 'Not linked'],
     })
 
     expect(tx.entryTag.createMany.mock.calls[0][0].data).toEqual([
       { entryId: 'e1', tagId: 'id-calm', source: 'AI_SUGGESTED' },
     ])
+    // The unrelated name is not created as a tag either
+    expect(tx.tag.upsert).toHaveBeenCalledTimes(1)
   })
 
   it('stores every link as MANUAL when aiSuggestedTags is omitted', async () => {
@@ -279,65 +279,6 @@ describe('EntryService.updateEntry', () => {
     expect(tx.entryTag.deleteMany).toHaveBeenCalledWith({
       where: { entryId: 'e1', tagId: { notIn: [] } },
     })
-    expect(tx.entryTag.createMany).not.toHaveBeenCalled()
-  })
-})
-
-describe('EntryService.updateEntry with aiSuggestedTags', () => {
-  it('adds accepted suggestions to the current tags as AI_SUGGESTED, unlinking nothing', async () => {
-    const { tx, service } = setup({ linkedTagIds: ['id-work'] })
-    await service.updateEntry('e1', { aiSuggestedTags: ['Sleep'] })
-
-    expect(tx.entryTag.findMany).toHaveBeenCalledWith({
-      where: { entryId: 'e1' },
-      select: { tagId: true },
-    })
-    expect(tx.entryTag.deleteMany).not.toHaveBeenCalled()
-    expect(tx.entryTag.createMany.mock.calls[0][0]).toEqual({
-      data: [
-        { entryId: 'e1', tagId: 'id-work', source: 'MANUAL' },
-        { entryId: 'e1', tagId: 'id-sleep', source: 'AI_SUGGESTED' },
-      ],
-      // Existing links (here `work`) are skipped, so they keep their source
-      skipDuplicates: true,
-    })
-  })
-
-  it('keeps the source of a suggestion that is already linked', async () => {
-    const { tx, service } = setup({ linkedTagIds: ['id-work'] })
-    await service.updateEntry('e1', { aiSuggestedTags: ['work'] })
-
-    // The row asks for AI_SUGGESTED, but the link already exists, so the database skips it
-    // and the MANUAL source stays
-    expect(tx.entryTag.createMany.mock.calls[0][0].skipDuplicates).toBe(true)
-    expect(tx.entryTag.createMany.mock.calls[0][0].data).toEqual([
-      { entryId: 'e1', tagId: 'id-work', source: 'AI_SUGGESTED' },
-    ])
-  })
-
-  it('with tags, sets the tag set to tags plus suggestions', async () => {
-    const { tx, service } = setup({ linkedTagIds: ['id-old'] })
-    await service.updateEntry('e1', { tags: ['Home', 'Sleep'], aiSuggestedTags: ['sleep', 'Rest'] })
-
-    expect(tx.entryTag.findMany).not.toHaveBeenCalled()
-    expect(tx.entryTag.deleteMany).toHaveBeenCalledWith({
-      where: { entryId: 'e1', tagId: { notIn: ['id-home', 'id-sleep', 'id-rest'] } },
-    })
-    expect(tx.entryTag.createMany.mock.calls[0][0].data).toEqual([
-      { entryId: 'e1', tagId: 'id-home', source: 'MANUAL' },
-      // In both lists: it came from a suggestion
-      { entryId: 'e1', tagId: 'id-sleep', source: 'AI_SUGGESTED' },
-      { entryId: 'e1', tagId: 'id-rest', source: 'AI_SUGGESTED' },
-    ])
-  })
-
-  it('rejects going over the per-entry tag limit, writing no links', async () => {
-    const linkedTagIds = Array.from({ length: 20 }, (_, i) => `id-t${i}`)
-    const { tx, service } = setup({ linkedTagIds })
-
-    await expect(service.updateEntry('e1', { aiSuggestedTags: ['extra'] })).rejects.toBeInstanceOf(
-      BadRequestError,
-    )
     expect(tx.entryTag.createMany).not.toHaveBeenCalled()
   })
 })

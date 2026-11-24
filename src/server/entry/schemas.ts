@@ -85,8 +85,6 @@ export type EntryCreateOutput = z.infer<typeof EntryCreateSchema>
 /**
  * `PATCH /api/v1/entries/:id` body. No defaults: an omitted field is left unchanged.
  * When `tags` is present it replaces the entry's full set of tags.
- * `aiSuggestedTags` are accepted AI suggestions: they're added to the entry (on top of `tags` when
- * both are sent) and newly linked ones are marked `AI_SUGGESTED`. Existing links keep their source.
  */
 export const EntryUpdateSchema = z
   .object({
@@ -96,7 +94,7 @@ export const EntryUpdateSchema = z
     tags: tags.optional(),
     aiSuggestedTags: tags.optional().meta({
       description:
-        'Accepted AI tag suggestions. They are added to the entry (on top of `tags` when both are sent), and newly linked ones are stored as AI_SUGGESTED instead of MANUAL. Existing links keep their source.',
+        'Names in `tags` that came from an AI suggestion. Tags newly linked to the entry with one of these names are stored as AI_SUGGESTED instead of MANUAL.',
     }),
   })
   .refine(
@@ -104,10 +102,13 @@ export const EntryUpdateSchema = z
       input.title !== undefined ||
       input.body !== undefined ||
       input.writtenAt !== undefined ||
-      input.tags !== undefined ||
-      input.aiSuggestedTags !== undefined,
-    'Change at least one of title, body, writtenAt, tags or aiSuggestedTags.',
+      input.tags !== undefined,
+    'Change at least one of title, body, writtenAt or tags.',
   )
+  .refine((input) => input.aiSuggestedTags === undefined || input.tags !== undefined, {
+    message: 'aiSuggestedTags can only be sent together with tags.',
+    path: ['aiSuggestedTags'],
+  })
 
 export type EntryUpdateInput = z.input<typeof EntryUpdateSchema>
 export type EntryUpdateOutput = z.infer<typeof EntryUpdateSchema>

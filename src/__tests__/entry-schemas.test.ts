@@ -125,7 +125,7 @@ describe('EntryUpdateSchema', () => {
 
   it.each([{}, { timeZone: 'Asia/Manila' }])('rejects %j: nothing to change', (input) => {
     expect(errorsOf(EntryUpdateSchema.safeParse(input))).toEqual({
-      '': 'Change at least one of title, body, writtenAt, tags or aiSuggestedTags.',
+      '': 'Change at least one of title, body, writtenAt or tags.',
     })
   })
 
@@ -152,9 +152,11 @@ describe('EntryUpdateSchema', () => {
       expect(EntryUpdateSchema.parse({ tags: ['Calm'] })).toEqual({ tags: ['Calm'] })
     })
 
-    it('is accepted on its own, de-duplicated', () => {
-      expect(EntryUpdateSchema.parse({ aiSuggestedTags: ['Sleep', 'sleep'] })).toEqual({
-        aiSuggestedTags: ['Sleep'],
+    it('is rejected without tags, since there is nothing to link', () => {
+      expect(
+        errorsOf(EntryUpdateSchema.safeParse({ body: 'x', aiSuggestedTags: ['Calm'] })),
+      ).toEqual({
+        aiSuggestedTags: 'aiSuggestedTags can only be sent together with tags.',
       })
     })
 
