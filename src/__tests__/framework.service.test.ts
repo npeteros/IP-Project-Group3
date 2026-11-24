@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 import type { PrismaClient } from '@/src/generated/prisma/client'
-import { ForbiddenError, NotFoundError } from '@/src/server/api/errors'
+import { ForbiddenError, InternalServerError, NotFoundError } from '@/src/server/api/errors'
 import { FrameworkService } from '@/src/server/framework/framework.service'
 
 const BUILT_IN = '00000000-0000-4000-8000-000000000001'
@@ -75,6 +75,14 @@ describe('FrameworkService.findManyFrameworks', () => {
       createdAt: created.toISOString(),
       updatedAt: updated.toISOString(),
     })
+  })
+})
+
+describe('FrameworkService response mapping', () => {
+  it('treats stored prompts that are not a list of strings as a server error', async () => {
+    const { service } = setup({ found: row({ prompts: { not: 'a list' } }) })
+
+    await expect(service.findOneFramework(BUILT_IN)).rejects.toBeInstanceOf(InternalServerError)
   })
 })
 

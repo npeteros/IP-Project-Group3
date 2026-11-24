@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { Prisma, PrismaClient } from '@/src/generated/prisma/client'
 import prisma from '@/src/lib/prisma'
-import { ForbiddenError, NotFoundError } from '@/src/server/api/errors'
+import { ForbiddenError, InternalServerError, NotFoundError } from '@/src/server/api/errors'
 import type {
   Framework,
   FrameworkCreateOutput,
@@ -17,6 +17,14 @@ export const MINUTES_PER_PROMPT = 2
 const PromptsSchema = z.array(z.string())
 
 function toFramework(row: FrameworkRow): Framework {
+  const prompts = PromptsSchema.safeParse(row.prompts)
+  // Bad stored data is a server fault, not a 400: a thrown ZodError would read as invalid input
+  if (!prompts.success) {
+    throw new InternalServerError(undefined, {
+      cause: new Error(`Framework ${row.id} has invalid prompts.`, { cause: prompts.error }),
+    })
+  }
+
   return {
     id: row.id,
     userId: row.userId,
@@ -24,7 +32,7 @@ function toFramework(row: FrameworkRow): Framework {
     description: row.description,
     icon: row.icon,
     durationMinutes: row.durationMinutes,
-    prompts: PromptsSchema.parse(row.prompts),
+    prompts: prompts.data,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }
