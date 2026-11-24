@@ -73,6 +73,31 @@ describe('entry analysis path', () => {
   })
 })
 
+describe('framework paths', () => {
+  const paths = openApiDocument.paths ?? {}
+
+  it('documents list, create, get and delete with their status codes', () => {
+    expect(paths['/frameworks']?.get?.operationId).toBe('listFrameworks')
+    expect(paths['/frameworks']?.post?.operationId).toBe('createFramework')
+    expect(paths['/frameworks/{id}']?.get?.operationId).toBe('getFramework')
+    expect(paths['/frameworks/{id}']?.delete?.operationId).toBe('deleteFramework')
+    expect(Object.keys(paths['/frameworks']?.post?.responses ?? {})).toEqual(['201', '400', '401'])
+    expect(Object.keys(paths['/frameworks/{id}']?.delete?.responses ?? {})).toEqual([
+      '204',
+      '400',
+      '401',
+      '403',
+      '404',
+    ])
+  })
+
+  it('registers the Framework schemas', () => {
+    expect(Object.keys(openApiDocument.components?.schemas ?? {})).toEqual(
+      expect.arrayContaining(['Framework', 'FrameworkList']),
+    )
+  })
+})
+
 describe('tag paths', () => {
   const paths = openApiDocument.paths ?? {}
 

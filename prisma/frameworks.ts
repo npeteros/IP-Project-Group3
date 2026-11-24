@@ -1,24 +1,23 @@
-// Placeholder framework data until frameworks are backed by the API.
+import type { FrameworkIcon } from '../src/lib/constants'
 
-import type { IconName } from '@/src/lib/constants'
-
-export type Framework = {
+/**
+ * The built-in frameworks every user sees. Ids are fixed so re-running the seed updates these rows
+ * in place, and entries written with a built-in keep pointing at it.
+ */
+export const BUILT_IN_FRAMEWORKS: {
   id: string
   name: string
   description: string
-  duration: string
-  icon: IconName
-  /** Prompts answered in order when using the framework. */
+  icon: FrameworkIcon
+  durationMinutes: number
   prompts: string[]
-}
-
-export const FRAMEWORKS: Framework[] = [
+}[] = [
   {
-    id: 'first-principles',
+    id: '00000000-0000-4000-8000-000000000001',
     name: 'First Principles',
     description: 'Break a problem down to its basics',
-    duration: '5 min',
     icon: 'layers',
+    durationMinutes: 5,
     prompts: [
       'What problem am I actually trying to solve?',
       'What do I know is true about it, for certain?',
@@ -26,11 +25,11 @@ export const FRAMEWORKS: Framework[] = [
     ],
   },
   {
-    id: 'ikigai',
+    id: '00000000-0000-4000-8000-000000000002',
     name: 'Ikigai',
     description: 'Find where purpose and passion meet',
-    duration: '8 min',
     icon: 'globe',
+    durationMinutes: 8,
     prompts: [
       'What do I love doing?',
       'What am I good at?',
@@ -39,11 +38,11 @@ export const FRAMEWORKS: Framework[] = [
     ],
   },
   {
-    id: 'daily-review',
+    id: '00000000-0000-4000-8000-000000000003',
     name: 'Daily Review',
     description: 'Three quick prompts to close the day',
-    duration: '3 min',
     icon: 'check',
+    durationMinutes: 3,
     prompts: [
       'What went well today?',
       'What could have gone better?',
@@ -51,11 +50,11 @@ export const FRAMEWORKS: Framework[] = [
     ],
   },
   {
-    id: 'regret-minimization',
+    id: '00000000-0000-4000-8000-000000000004',
     name: 'Regret Minimization',
     description: 'Decide by looking back from age 80',
-    duration: '6 min',
     icon: 'cross',
+    durationMinutes: 6,
     prompts: [
       'What decision am I facing?',
       'Looking back at 80, which choice would I regret not making?',
@@ -63,11 +62,11 @@ export const FRAMEWORKS: Framework[] = [
     ],
   },
   {
-    id: 'gratitude-map',
+    id: '00000000-0000-4000-8000-000000000005',
     name: 'Gratitude Map',
     description: 'Trace one good thing to its roots',
-    duration: '4 min',
     icon: 'heart',
+    durationMinutes: 4,
     prompts: [
       "What's one good thing from today?",
       'What made it possible?',
@@ -75,14 +74,3 @@ export const FRAMEWORKS: Framework[] = [
     ],
   },
 ]
-
-export function getFramework(id: string): Framework | undefined {
-  return FRAMEWORKS.find((framework) => framework.id === id)
-}
-
-export const FRAMEWORK_BUILDER = {
-  title: 'New framework',
-  namePlaceholder: 'Name it, e.g. Sunday Reset',
-  promptPlaceholder: 'Add a prompt…',
-  maxPrompts: 10,
-}

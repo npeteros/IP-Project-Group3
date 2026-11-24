@@ -20,6 +20,19 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Database
+
+Apply migrations, then seed the built-in frameworks (First Principles, Ikigai, and so on):
+
+```bash
+npx prisma migrate deploy --config prisma7.config.ts
+npx prisma db seed --config prisma7.config.ts
+```
+
+Run the seed in every environment, production included: the Frameworks page lists nothing until
+it has run. It is safe to run again, since each built-in is upserted by a fixed id, so re-running
+it after editing `prisma/frameworks.ts` updates the built-ins in place.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

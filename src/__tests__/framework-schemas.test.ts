@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  FRAMEWORK_DESCRIPTION_MAX_LENGTH,
+  FRAMEWORK_NAME_MAX_LENGTH,
+  FRAMEWORK_PROMPT_MAX_LENGTH,
   FrameworkCreateSchema,
   FrameworkIdSchema,
   FrameworkListSchema,
@@ -33,20 +36,18 @@ describe('Framework schemas', () => {
     expect(FrameworkIdSchema.safeParse({ id: 'daily-review' }).success).toBe(false)
   })
 
-  it('trims framework fields and prompts', () => {
+  it('trims framework text fields and prompts', () => {
     expect(
       FrameworkCreateSchema.parse({
         name: ' Daily Review ',
         description: ' A short reflection ',
-        icon: ' check ',
-        durationMinutes: 3,
+        icon: 'check',
         prompts: [' What went well? '],
       }),
     ).toEqual({
       name: 'Daily Review',
       description: 'A short reflection',
       icon: 'check',
-      durationMinutes: 3,
       prompts: ['What went well?'],
     })
   })
@@ -59,16 +60,27 @@ describe('Framework schemas', () => {
           name: 'Daily Review',
           description: 'A short reflection',
           icon: 'check',
-          durationMinutes: 3,
           prompts,
         }).success,
       ).toBe(false)
     },
   )
 
-  it('rejects non-positive or fractional durations', () => {
+  it('caps the length of the name, description and each prompt', () => {
     const create = { name: 'Test', description: 'Test', icon: 'check', prompts: ['Prompt'] }
-    expect(FrameworkCreateSchema.safeParse({ ...create, durationMinutes: 0 }).success).toBe(false)
-    expect(FrameworkCreateSchema.safeParse({ ...create, durationMinutes: 1.5 }).success).toBe(false)
+    const valid = (overrides: Record<string, unknown>) =>
+      FrameworkCreateSchema.safeParse({ ...create, ...overrides }).success
+
+    expect(valid({ name: 'n'.repeat(FRAMEWORK_NAME_MAX_LENGTH) })).toBe(true)
+    expect(valid({ name: 'n'.repeat(FRAMEWORK_NAME_MAX_LENGTH + 1) })).toBe(false)
+    expect(valid({ description: 'd'.repeat(FRAMEWORK_DESCRIPTION_MAX_LENGTH + 1) })).toBe(false)
+    expect(valid({ prompts: ['p'.repeat(FRAMEWORK_PROMPT_MAX_LENGTH)] })).toBe(true)
+    expect(valid({ prompts: ['p'.repeat(FRAMEWORK_PROMPT_MAX_LENGTH + 1)] })).toBe(false)
+  })
+
+  it('only accepts icons the app can draw', () => {
+    const create = { name: 'Test', description: 'Test', prompts: ['Prompt'] }
+    expect(FrameworkCreateSchema.safeParse({ ...create, icon: 'sun' }).success).toBe(true)
+    expect(FrameworkCreateSchema.safeParse({ ...create, icon: 'rocket' }).success).toBe(false)
   })
 })

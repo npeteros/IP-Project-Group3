@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { FRAMEWORK_ICONS } from '@/src/lib/constants'
 
 // Shared by framework routes, client procedures, and forms; keep this file server-agnostic.
 
@@ -29,15 +30,43 @@ export const FrameworkIdSchema = z.object({
 export type FrameworkIdInput = z.input<typeof FrameworkIdSchema>
 export type FrameworkIdOutput = z.infer<typeof FrameworkIdSchema>
 
+export const FRAMEWORK_NAME_MAX_LENGTH = 80
+export const FRAMEWORK_DESCRIPTION_MAX_LENGTH = 160
+export const FRAMEWORK_PROMPT_MAX_LENGTH = 200
+export const FRAMEWORK_PROMPTS_MAX = 10
+
+/** `POST /api/v1/frameworks` body. The duration isn't sent: it's estimated from the prompts. */
 export const FrameworkCreateSchema = z.object({
-  name: z.string().trim().min(1, 'Enter a framework name.'),
-  description: z.string().trim().min(1, 'Enter a framework description.'),
-  icon: z.string().trim().min(1, 'Choose an icon.'),
-  durationMinutes: z.number().int().positive(),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Enter a framework name.')
+    .max(
+      FRAMEWORK_NAME_MAX_LENGTH,
+      `Framework names can be at most ${FRAMEWORK_NAME_MAX_LENGTH} characters.`,
+    ),
+  description: z
+    .string()
+    .trim()
+    .min(1, 'Enter a framework description.')
+    .max(
+      FRAMEWORK_DESCRIPTION_MAX_LENGTH,
+      `Descriptions can be at most ${FRAMEWORK_DESCRIPTION_MAX_LENGTH} characters.`,
+    ),
+  icon: z.enum(FRAMEWORK_ICONS, 'Choose an icon.'),
   prompts: z
-    .array(z.string().trim().min(1, 'Prompts cannot be empty.'))
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, 'Prompts cannot be empty.')
+        .max(
+          FRAMEWORK_PROMPT_MAX_LENGTH,
+          `Prompts can be at most ${FRAMEWORK_PROMPT_MAX_LENGTH} characters.`,
+        ),
+    )
     .min(1, 'Add at least one prompt.')
-    .max(10, 'A framework can have at most 10 prompts.'),
+    .max(FRAMEWORK_PROMPTS_MAX, `A framework can have at most ${FRAMEWORK_PROMPTS_MAX} prompts.`),
 })
 
 export type FrameworkCreateInput = z.input<typeof FrameworkCreateSchema>
