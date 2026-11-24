@@ -11,6 +11,7 @@ import { typography } from '@/src/lib/typography'
 import {
   EntryIdSchema,
   EntryUpdateSchema,
+  TAGS_PER_ENTRY_MAX,
   normalizeTagName,
   type EntryUpdateOutput,
 } from '@/src/server/entry/schemas'
@@ -69,6 +70,9 @@ export function EditEntryEditor({ id }: { id: string }) {
   const idIsValid = EntryIdSchema.safeParse({ id }).success
   const query = api.entry.findOneEntry.useQuery({ id }, { enabled: idIsValid })
   const updateEntry = api.entry.update.useMutation()
+  // Accepting a suggested tag is its own write: it mustn't make the editor read-only, and its
+  // failure is reported as a failed accept rather than a failed save
+  const acceptSuggestion = api.entry.update.useMutation()
   const deleteEntry = api.entry.delete.useMutation()
   const analyze = api.entry.analyze.useMutation()
   const { mutate: runAnalysis } = analyze
@@ -107,6 +111,7 @@ export function EditEntryEditor({ id }: { id: string }) {
 
   const save = async (values: EntryUpdateOutput) => {
     deleteEntry.reset()
+    acceptSuggestion.reset()
     const changes = changedEntryFields(values, entry)
     if (!changes) return toEntryFormValues(entry)
 
@@ -118,6 +123,7 @@ export function EditEntryEditor({ id }: { id: string }) {
 
   const remove = () => {
     updateEntry.reset()
+    acceptSuggestion.reset()
     deleteEntry.mutate(
       { id: entry.id },
       { onSuccess: () => startNavigation(() => router.push('/journal')) },
@@ -136,15 +142,33 @@ export function EditEntryEditor({ id }: { id: string }) {
       aiPanel={(editor) => {
         const mentions = (names: string[], name: string) =>
           names.some((existing) => normalizeTagName(existing) === normalizeTagName(name))
-        // Accepting saves the tag now (as AI_SUGGESTED) rather than waiting for the next Save
-        const acceptTag = (name: string) =>
-          updateEntry.mutate(
-            { id: entry.id, tags: [...editor.tags, name], aiSuggestedTags: [name] },
-            { onSuccess: (saved) => editor.setSavedTags(saved.tags.map((tag) => tag.name)) },
-          )
+        const savedTags = entry.tags.map((tag) => tag.name)
+        // Accepting saves the tag now (as AI_SUGGESTED) rather than waiting for the next Save. It
+        // sends the saved tags plus the suggestion, so tag edits the user hasn't saved stay unsaved.
+        const acceptTag = async (name: string) => {
+          updateEntry.reset()
+          deleteEntry.reset()
+          try {
+            const saved = await acceptSuggestion.mutateAsync({
+              id: entry.id,
+              tags: [...savedTags, name],
+              aiSuggestedTags: [name],
+            })
+            editor.tagAccepted(
+              saved.tags.map((tag) => tag.name),
+              name,
+            )
+          } catch {
+            // Reported through `error`; the suggestion stays on offer
+          }
+        }
+        // Accepting would go over the limit, which the server always rejects
+        const atTagLimit =
+          savedTags.length >= TAGS_PER_ENTRY_MAX || editor.tags.length >= TAGS_PER_ENTRY_MAX
 
         return (
           <EntryAiPanel
+            conversationId={entry.id}
             draft={editor.draft}
             analysis={{
               // The fresh result wins until the refetched entry catches up
@@ -152,12 +176,16 @@ export function EditEntryEditor({ id }: { id: string }) {
               summary: analyze.data?.summary ?? entry.summary,
               status: analysisStatus(analyze),
               onAnalyze: startAnalysis,
-              suggestions: (analyze.data?.suggestedTags ?? []).filter(
-                (name) => !mentions(dismissedTags, name) && !mentions(editor.tags, name),
-              ),
-              acceptingTag: updateEntry.isPending
-                ? (updateEntry.variables?.aiSuggestedTags?.[0] ?? null)
+              suggestions: atTagLimit
+                ? []
+                : (analyze.data?.suggestedTags ?? []).filter(
+                    (name) => !mentions(dismissedTags, name) && !mentions(editor.tags, name),
+                  ),
+              acceptingTag: acceptSuggestion.isPending
+                ? (acceptSuggestion.variables?.aiSuggestedTags?.[0] ?? null)
                 : null,
+              // A Save and an accept send different tag sets, so only one may be in flight
+              suggestionsLocked: updateEntry.isPending || acceptSuggestion.isPending,
               onAcceptTag: acceptTag,
               onDismissTag: (name) => setDismissedTags((current) => [...current, name]),
             }}
@@ -169,7 +197,14 @@ export function EditEntryEditor({ id }: { id: string }) {
       )}
       isSaving={updateEntry.isPending}
       isDeleting={isLeaving}
-      error={deleteEntry.error?.message ?? updateEntry.error?.message ?? null}
+      canSave={!acceptSuggestion.isPending}
+      error={
+        deleteEntry.error?.message ??
+        updateEntry.error?.message ??
+        (acceptSuggestion.error && acceptSuggestion.variables?.aiSuggestedTags
+          ? `Couldn’t add “${acceptSuggestion.variables.aiSuggestedTags[0]}”: ${acceptSuggestion.error.message}`
+          : null)
+      }
     />
   )
 }

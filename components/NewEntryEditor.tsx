@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'
 import { api } from '@/src/lib/api'
+import { NEW_ENTRY_CONVERSATION, moveConversation } from '@/src/lib/chat/companionConversations'
 import { queueEntryAnalysis } from '@/src/lib/entry-analysis'
 import { toEntryFormValues } from '@/src/lib/entry-form'
 import { EntryCreateSchema, type EntryCreateOutput } from '@/src/server/entry/schemas'
@@ -27,6 +28,8 @@ export function NewEntryEditor({ dateLabel }: { dateLabel: string }) {
     queryClient.setQueryData(api.entry.findOneEntry.queryKey({ id: entry.id }), entry)
     // The entry page picks this up and starts the analysis there
     queueEntryAnalysis(entry.id)
+    // The Companion conversation carries on with the entry instead of starting over
+    moveConversation(NEW_ENTRY_CONVERSATION, entry.id)
     startNavigation(() => router.push(`/journal/${entry.id}`))
     return toEntryFormValues(entry)
   }
@@ -38,7 +41,9 @@ export function NewEntryEditor({ dateLabel }: { dateLabel: string }) {
       tagSuggestions={tagList.data?.tags.map((tag) => tag.name)}
       onSave={save}
       // Nothing to analyze until it's saved, but the Companion can already talk about the draft
-      aiPanel={(editor) => <EntryAiPanel draft={editor.draft} />}
+      aiPanel={(editor) => (
+        <EntryAiPanel conversationId={NEW_ENTRY_CONVERSATION} draft={editor.draft} />
+      )}
       manageTags={(editor) => (
         <ManageTags onRenamed={editor.tagRenamed} onDeleted={editor.tagDeleted} />
       )}
