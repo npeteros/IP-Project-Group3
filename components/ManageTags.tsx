@@ -114,17 +114,18 @@ function DeleteConfirmation({
         <button
           type="button"
           disabled={remove.isPending}
-          onClick={() =>
-            remove.mutate(
-              { id: tag.id },
-              {
-                onSuccess: () => {
-                  onDeleted(tag.name)
-                  onDone()
-                },
-              },
-            )
-          }
+          onClick={async () => {
+            // Awaited rather than a per-call `onSuccess`, which TanStack skips if this unmounts
+            // first (the tag list refetches as soon as the delete lands). Missing `onDeleted`
+            // would leave the tag in the editor, and the next Save would create it again.
+            try {
+              await remove.mutateAsync({ id: tag.id })
+            } catch {
+              return // Shown through `remove.isError`
+            }
+            onDeleted(tag.name)
+            onDone()
+          }}
           className="h-8 rounded-[10px] bg-amber-700 px-3.5 text-xs leading-none font-semibold text-surface disabled:cursor-not-allowed disabled:opacity-60"
         >
           {remove.isPending ? 'Deleting…' : 'Yes, delete'}
