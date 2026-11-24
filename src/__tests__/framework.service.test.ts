@@ -94,20 +94,26 @@ describe('FrameworkService.findOneFramework', () => {
 })
 
 describe('FrameworkService.createFramework', () => {
-  it('creates the framework owned by the user', async () => {
+  it('creates the framework owned by the user, estimating its duration from the prompts', async () => {
     const { db, service } = setup()
     const input = {
       name: 'Sunday Reset',
       description: 'Close the week',
       icon: 'sun' as const,
-      durationMinutes: 2,
-      prompts: ['What am I proud of?'],
+      prompts: ['What am I proud of?', 'What do I want next week?'],
     }
 
     const framework = await service.createFramework(input)
 
-    expect(db.framework.create).toHaveBeenCalledWith({ data: { userId: 'u1', ...input } })
-    expect(framework).toMatchObject({ id: CUSTOM, userId: 'u1', name: 'Sunday Reset' })
+    expect(db.framework.create).toHaveBeenCalledWith({
+      data: { userId: 'u1', ...input, durationMinutes: 4 },
+    })
+    expect(framework).toMatchObject({
+      id: CUSTOM,
+      userId: 'u1',
+      name: 'Sunday Reset',
+      durationMinutes: 4,
+    })
   })
 })
 

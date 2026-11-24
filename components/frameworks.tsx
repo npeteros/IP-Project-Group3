@@ -396,11 +396,6 @@ function move<T>(items: T[], from: number, to: number): T[] {
   return next
 }
 
-/** Custom frameworks have no duration field, so it's estimated from the prompts. */
-function estimateMinutes(promptCount: number) {
-  return Math.max(1, promptCount * FRAMEWORK_BUILDER.minutesPerPrompt)
-}
-
 const FIELD =
   'h-12 w-full rounded-xl border border-neutral-200 bg-surface px-4 text-[15px] text-neutral-900 outline-none placeholder:font-sans placeholder:font-normal placeholder:text-neutral-400 focus:border-neutral-400'
 
@@ -424,7 +419,6 @@ export function FrameworkBuilder() {
       name: '',
       description: '',
       icon: 'layers',
-      durationMinutes: estimateMinutes(0),
       prompts: [],
     },
   })
@@ -447,9 +441,7 @@ export function FrameworkBuilder() {
   useUnsavedChangesWarning((isDirty || draft.trim() !== '') && !isSaved)
 
   function setPrompts(next: string[]) {
-    const options = { shouldDirty: true, shouldValidate: errors.prompts !== undefined }
-    setValue('prompts', next, options)
-    setValue('durationMinutes', estimateMinutes(next.length), options)
+    setValue('prompts', next, { shouldDirty: true, shouldValidate: errors.prompts !== undefined })
   }
 
   function addDraft() {

@@ -273,7 +273,7 @@ describe('FrameworkBuilder', () => {
     expect(promptTexts()).toEqual(['C', 'B'])
   })
 
-  it('creates the framework with an estimated duration, then returns to the gallery', async () => {
+  it('creates the framework, then returns to the gallery', async () => {
     mockApi({ 'POST /api/v1/frameworks': () => json(201, SUNDAY_RESET) })
     renderWithClient(<FrameworkBuilder />)
     fillIn(' Sunday Reset ', 'Close out the week')
@@ -287,7 +287,6 @@ describe('FrameworkBuilder', () => {
       name: 'Sunday Reset',
       description: 'Close out the week',
       icon: 'sun',
-      durationMinutes: 4,
       prompts: ['What am I proud of?', 'What do I want next week?'],
     })
   })

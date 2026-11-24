@@ -10,6 +10,9 @@ import type {
 
 type FrameworkRow = Prisma.FrameworkGetPayload<object>
 
+/** Custom frameworks are estimated at this many minutes per prompt. */
+export const MINUTES_PER_PROMPT = 2
+
 // `prompts` is a `Json` column, so check its shape rather than trusting the cast
 const PromptsSchema = z.array(z.string())
 
@@ -67,7 +70,7 @@ export class FrameworkService {
         name: input.name,
         description: input.description,
         icon: input.icon,
-        durationMinutes: input.durationMinutes,
+        durationMinutes: input.prompts.length * MINUTES_PER_PROMPT,
         prompts: input.prompts,
       },
     })

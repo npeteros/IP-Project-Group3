@@ -27,7 +27,8 @@ export const frameworkPaths: ZodOpenApiPathsObject = {
       operationId: 'createFramework',
       tags: ['Frameworks'],
       summary: 'Create a custom framework',
-      description: 'The new framework belongs to the user and is only visible to them.',
+      description:
+        'The new framework belongs to the user and is only visible to them. `durationMinutes` is estimated from the number of prompts.',
       requestBody: {
         required: true,
         content: { 'application/json': { schema: FrameworkCreateSchema } },

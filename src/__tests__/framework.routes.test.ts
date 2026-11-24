@@ -39,7 +39,6 @@ const createBody = {
   name: 'Sunday Reset',
   description: 'Close the week',
   icon: 'sun',
-  durationMinutes: 2,
   prompts: ['What am I proud of?'],
 }
 
@@ -92,7 +91,6 @@ describe('POST /api/v1/frameworks', () => {
   it.each([
     ['no prompts', { ...createBody, prompts: [] }],
     ['an unknown icon', { ...createBody, icon: 'rocket' }],
-    ['a zero duration', { ...createBody, durationMinutes: 0 }],
   ])('responds 400 for %s', async (_, body) => {
     const res = await POST(req('POST', body), undefined as never)
 

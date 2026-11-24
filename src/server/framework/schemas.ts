@@ -30,11 +30,11 @@ export const FrameworkIdSchema = z.object({
 export type FrameworkIdInput = z.input<typeof FrameworkIdSchema>
 export type FrameworkIdOutput = z.infer<typeof FrameworkIdSchema>
 
+/** `POST /api/v1/frameworks` body. The duration isn't sent: it's estimated from the prompts. */
 export const FrameworkCreateSchema = z.object({
   name: z.string().trim().min(1, 'Enter a framework name.'),
   description: z.string().trim().min(1, 'Enter a framework description.'),
   icon: z.enum(FRAMEWORK_ICONS, 'Choose an icon.'),
-  durationMinutes: z.number().int().positive(),
   prompts: z
     .array(z.string().trim().min(1, 'Prompts cannot be empty.'))
     .min(1, 'Add at least one prompt.')

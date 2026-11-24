@@ -39,14 +39,12 @@ describe('Framework schemas', () => {
         name: ' Daily Review ',
         description: ' A short reflection ',
         icon: 'check',
-        durationMinutes: 3,
         prompts: [' What went well? '],
       }),
     ).toEqual({
       name: 'Daily Review',
       description: 'A short reflection',
       icon: 'check',
-      durationMinutes: 3,
       prompts: ['What went well?'],
     })
   })
@@ -59,7 +57,6 @@ describe('Framework schemas', () => {
           name: 'Daily Review',
           description: 'A short reflection',
           icon: 'check',
-          durationMinutes: 3,
           prompts,
         }).success,
       ).toBe(false)
@@ -67,14 +64,8 @@ describe('Framework schemas', () => {
   )
 
   it('only accepts icons the app can draw', () => {
-    const create = { name: 'Test', description: 'Test', durationMinutes: 1, prompts: ['Prompt'] }
+    const create = { name: 'Test', description: 'Test', prompts: ['Prompt'] }
     expect(FrameworkCreateSchema.safeParse({ ...create, icon: 'sun' }).success).toBe(true)
     expect(FrameworkCreateSchema.safeParse({ ...create, icon: 'rocket' }).success).toBe(false)
-  })
-
-  it('rejects non-positive or fractional durations', () => {
-    const create = { name: 'Test', description: 'Test', icon: 'check', prompts: ['Prompt'] }
-    expect(FrameworkCreateSchema.safeParse({ ...create, durationMinutes: 0 }).success).toBe(false)
-    expect(FrameworkCreateSchema.safeParse({ ...create, durationMinutes: 1.5 }).success).toBe(false)
   })
 })

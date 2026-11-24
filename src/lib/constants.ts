@@ -141,8 +141,6 @@ export const FRAMEWORK_BUILDER = {
   descriptionPlaceholder: 'What is it for? e.g. Close out the week',
   promptPlaceholder: 'Add a prompt…',
   maxPrompts: 10,
-  /** Custom frameworks have no duration field: it's estimated from the number of prompts. */
-  minutesPerPrompt: 2,
 }
 
 export const CHAT_PAGE = {
