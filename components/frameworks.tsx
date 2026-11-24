@@ -18,6 +18,10 @@ import { composeFrameworkBody } from '@/src/lib/framework-entry'
 import { typography } from '@/src/lib/typography'
 import { useUnsavedChangesWarning } from '@/src/lib/use-unsaved-changes-warning'
 import {
+  FRAMEWORK_DESCRIPTION_MAX_LENGTH,
+  FRAMEWORK_NAME_MAX_LENGTH,
+  FRAMEWORK_PROMPT_MAX_LENGTH,
+  FRAMEWORK_PROMPTS_MAX,
   FrameworkCreateSchema,
   FrameworkIdSchema,
   type FrameworkCreateInput,
@@ -429,7 +433,7 @@ export function FrameworkBuilder() {
 
   const isSaving = createFramework.isPending || isNavigating
   const isSaved = createFramework.isSuccess
-  const atLimit = prompts.length >= FRAMEWORK_BUILDER.maxPrompts
+  const atLimit = prompts.length >= FRAMEWORK_PROMPTS_MAX
   const hasDraft = draft.trim() !== ''
   const canSave =
     name.trim() !== '' &&
@@ -497,7 +501,7 @@ export function FrameworkBuilder() {
             aria-label="Framework name"
             aria-invalid={errors.name ? true : undefined}
             placeholder={FRAMEWORK_BUILDER.namePlaceholder}
-            maxLength={80}
+            maxLength={FRAMEWORK_NAME_MAX_LENGTH}
             {...register('name')}
             className={`${FIELD} font-serif font-semibold`}
           />
@@ -509,7 +513,7 @@ export function FrameworkBuilder() {
             aria-label="Description"
             aria-invalid={errors.description ? true : undefined}
             placeholder={FRAMEWORK_BUILDER.descriptionPlaceholder}
-            maxLength={160}
+            maxLength={FRAMEWORK_DESCRIPTION_MAX_LENGTH}
             {...register('description')}
             className={FIELD}
           />
@@ -595,7 +599,7 @@ export function FrameworkBuilder() {
                 aria-label="New prompt"
                 value={draft}
                 placeholder={FRAMEWORK_BUILDER.promptPlaceholder}
-                maxLength={200}
+                maxLength={FRAMEWORK_PROMPT_MAX_LENGTH}
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
@@ -621,7 +625,7 @@ export function FrameworkBuilder() {
         </button>
         {atLimit && (
           <p className="text-xs text-neutral-400">
-            A framework can have up to {FRAMEWORK_BUILDER.maxPrompts} prompts.
+            A framework can have up to {FRAMEWORK_PROMPTS_MAX} prompts.
           </p>
         )}
       </form>

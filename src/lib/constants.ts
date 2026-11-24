@@ -140,7 +140,6 @@ export const FRAMEWORK_BUILDER = {
   namePlaceholder: 'Name it, e.g. Sunday Reset',
   descriptionPlaceholder: 'What is it for? e.g. Close out the week',
   promptPlaceholder: 'Add a prompt…',
-  maxPrompts: 10,
 }
 
 export const CHAT_PAGE = {

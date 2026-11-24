@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  FRAMEWORK_DESCRIPTION_MAX_LENGTH,
+  FRAMEWORK_NAME_MAX_LENGTH,
+  FRAMEWORK_PROMPT_MAX_LENGTH,
   FrameworkCreateSchema,
   FrameworkIdSchema,
   FrameworkListSchema,
@@ -62,6 +65,18 @@ describe('Framework schemas', () => {
       ).toBe(false)
     },
   )
+
+  it('caps the length of the name, description and each prompt', () => {
+    const create = { name: 'Test', description: 'Test', icon: 'check', prompts: ['Prompt'] }
+    const valid = (overrides: Record<string, unknown>) =>
+      FrameworkCreateSchema.safeParse({ ...create, ...overrides }).success
+
+    expect(valid({ name: 'n'.repeat(FRAMEWORK_NAME_MAX_LENGTH) })).toBe(true)
+    expect(valid({ name: 'n'.repeat(FRAMEWORK_NAME_MAX_LENGTH + 1) })).toBe(false)
+    expect(valid({ description: 'd'.repeat(FRAMEWORK_DESCRIPTION_MAX_LENGTH + 1) })).toBe(false)
+    expect(valid({ prompts: ['p'.repeat(FRAMEWORK_PROMPT_MAX_LENGTH)] })).toBe(true)
+    expect(valid({ prompts: ['p'.repeat(FRAMEWORK_PROMPT_MAX_LENGTH + 1)] })).toBe(false)
+  })
 
   it('only accepts icons the app can draw', () => {
     const create = { name: 'Test', description: 'Test', prompts: ['Prompt'] }
